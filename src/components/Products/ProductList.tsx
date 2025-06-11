@@ -34,14 +34,14 @@ interface Filters {
 export const ProductList = () => {
   const [filters, setFilters] = useState<Filters>({
     search: '',
-    category: '',
-    county: '',
+    category: 'all',
+    county: 'all',
     priceRange: { min: 0, max: Infinity }
   });
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [localSearch, setLocalSearch] = useState('');
-  const [localCategory, setLocalCategory] = useState('');
-  const [localCounty, setLocalCounty] = useState('');
+  const [localCategory, setLocalCategory] = useState('all');
+  const [localCounty, setLocalCounty] = useState('all');
   const [localMinPrice, setLocalMinPrice] = useState('');
   const [localMaxPrice, setLocalMaxPrice] = useState('');
 
@@ -82,11 +82,11 @@ export const ProductList = () => {
         query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
       }
       
-      if (filters.category) {
+      if (filters.category && filters.category !== 'all') {
         query = query.eq('category', filters.category as ProductCategory);
       }
       
-      if (filters.county) {
+      if (filters.county && filters.county !== 'all') {
         query = query.eq('county_id', parseInt(filters.county));
       }
       
@@ -119,14 +119,14 @@ export const ProductList = () => {
 
   const handleClearFilters = () => {
     setLocalSearch('');
-    setLocalCategory('');
-    setLocalCounty('');
+    setLocalCategory('all');
+    setLocalCounty('all');
     setLocalMinPrice('');
     setLocalMaxPrice('');
     setFilters({
       search: '',
-      category: '',
-      county: '',
+      category: 'all',
+      county: 'all',
       priceRange: { min: 0, max: Infinity }
     });
   };
@@ -176,7 +176,7 @@ export const ProductList = () => {
                   <SelectValue placeholder="All categories" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All categories</SelectItem>
+                  <SelectItem value="all">All categories</SelectItem>
                   {categories.map((cat) => (
                     <SelectItem key={cat} value={cat}>
                       {cat.charAt(0).toUpperCase() + cat.slice(1).replace('_', ' ')}
@@ -193,7 +193,7 @@ export const ProductList = () => {
                   <SelectValue placeholder="All counties" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All counties</SelectItem>
+                  <SelectItem value="all">All counties</SelectItem>
                   {counties.map((c) => (
                     <SelectItem key={c.id} value={c.id.toString()}>
                       {c.name}
