@@ -8,6 +8,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 
+type ProductCategory = 'crops' | 'livestock' | 'dairy' | 'poultry' | 'aquaculture' | 'horticulture' | 'cereals' | 'legumes' | 'fruits' | 'vegetables' | 'farm_equipment' | 'seeds' | 'fertilizers' | 'pesticides';
+
 interface Filters {
   search: string;
   category: string;
@@ -61,7 +63,7 @@ export const ProductList = () => {
       }
       
       if (filters.category) {
-        query = query.eq('category', filters.category);
+        query = query.eq('category', filters.category as ProductCategory);
       }
       
       if (filters.county) {

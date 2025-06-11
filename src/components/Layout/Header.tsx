@@ -3,14 +3,19 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Menu, User, Store, MessageCircle, Bell, Search } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Menu, X, User, Store, MessageCircle, Bell, LogOut, Leaf } from 'lucide-react';
 
 export const Header = () => {
-  const [isOpen, setIsOpen] = useState(false);
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const handleSignOut = async () => {
     await signOut();
@@ -18,152 +23,167 @@ export const Header = () => {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between px-4">
-        <div className="flex items-center space-x-4">
+    <header className="bg-white shadow-sm border-b">
+      <div className="container mx-auto px-4">
+        <div className="flex justify-between items-center h-16">
+          {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
-            <div className="h-8 w-8 bg-green-600 rounded-full flex items-center justify-center text-white font-bold">
-              J
-            </div>
-            <span className="text-xl font-bold text-green-600">Jikagri</span>
+            <Leaf className="h-8 w-8 text-green-600" />
+            <span className="text-xl font-bold text-gray-900">Jikagri</span>
           </Link>
-        </div>
 
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center space-x-6">
-          <Link to="/products" className="text-sm font-medium hover:text-green-600 transition-colors">
-            Products
-          </Link>
-          <Link to="/stores" className="text-sm font-medium hover:text-green-600 transition-colors">
-            Stores
-          </Link>
-          {user && (
-            <>
-              <Link to="/chat" className="text-sm font-medium hover:text-green-600 transition-colors flex items-center space-x-1">
-                <MessageCircle className="h-4 w-4" />
-                <span>Chat</span>
-              </Link>
-              <Link to="/notifications" className="text-sm font-medium hover:text-green-600 transition-colors flex items-center space-x-1">
-                <Bell className="h-4 w-4" />
-                <span>Notifications</span>
-              </Link>
-            </>
-          )}
-        </nav>
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex items-center space-x-8">
+            <Link to="/" className="text-gray-700 hover:text-green-600 transition-colors">
+              Home
+            </Link>
+            <Link to="/products" className="text-gray-700 hover:text-green-600 transition-colors">
+              Products
+            </Link>
+            <Link to="/stores" className="text-gray-700 hover:text-green-600 transition-colors">
+              Stores
+            </Link>
+            <Link to="/about" className="text-gray-700 hover:text-green-600 transition-colors">
+              About
+            </Link>
+          </nav>
 
-        {/* Desktop Auth Buttons */}
-        <div className="hidden md:flex items-center space-x-2">
-          {user ? (
-            <div className="flex items-center space-x-2">
-              <Link to="/profile">
-                <Button variant="ghost" size="sm">
-                  <User className="h-4 w-4 mr-2" />
-                  Profile
+          {/* User Actions */}
+          <div className="hidden md:flex items-center space-x-4">
+            {user ? (
+              <>
+                <Link to="/chat">
+                  <Button variant="ghost" size="sm">
+                    <MessageCircle className="h-4 w-4 mr-2" />
+                    Chat
+                  </Button>
+                </Link>
+                <Link to="/notifications">
+                  <Button variant="ghost" size="sm">
+                    <Bell className="h-4 w-4" />
+                  </Button>
+                </Link>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm">
+                      <User className="h-4 w-4 mr-2" />
+                      Account
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem asChild>
+                      <Link to="/profile">Profile</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/my-store">My Store</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleSignOut}>
+                      <LogOut className="h-4 w-4 mr-2" />
+                      Sign Out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            ) : (
+              <Link to="/auth">
+                <Button className="bg-green-600 hover:bg-green-700">
+                  Sign In
                 </Button>
               </Link>
-              <Link to="/my-store">
-                <Button variant="ghost" size="sm">
-                  <Store className="h-4 w-4 mr-2" />
-                  My Store
-                </Button>
-              </Link>
-              <Button onClick={handleSignOut} variant="outline" size="sm">
-                Sign Out
-              </Button>
-            </div>
-          ) : (
-            <div className="flex items-center space-x-2">
-              <Link to="/auth">
-                <Button variant="ghost" size="sm">Sign In</Button>
-              </Link>
-              <Link to="/auth">
-                <Button size="sm" className="bg-green-600 hover:bg-green-700">Sign Up</Button>
-              </Link>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
 
-        {/* Mobile Menu */}
-        <Sheet open={isOpen} onOpenChange={setIsOpen}>
-          <SheetTrigger asChild className="md:hidden">
-            <Button variant="ghost" size="sm">
-              <Menu className="h-5 w-5" />
+          {/* Mobile Menu Button */}
+          <div className="md:hidden">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+            >
+              {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </Button>
-          </SheetTrigger>
-          <SheetContent side="right" className="w-[300px] sm:w-[400px]">
-            <nav className="flex flex-col space-y-4 mt-8">
-              <Link 
-                to="/products" 
-                className="text-lg font-medium hover:text-green-600 transition-colors"
-                onClick={() => setIsOpen(false)}
+          </div>
+        </div>
+
+        {/* Mobile Navigation */}
+        {isMenuOpen && (
+          <div className="md:hidden py-4 border-t">
+            <nav className="flex flex-col space-y-4">
+              <Link
+                to="/"
+                className="text-gray-700 hover:text-green-600 transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Home
+              </Link>
+              <Link
+                to="/products"
+                className="text-gray-700 hover:text-green-600 transition-colors"
+                onClick={() => setIsMenuOpen(false)}
               >
                 Products
               </Link>
-              <Link 
-                to="/stores" 
-                className="text-lg font-medium hover:text-green-600 transition-colors"
-                onClick={() => setIsOpen(false)}
+              <Link
+                to="/stores"
+                className="text-gray-700 hover:text-green-600 transition-colors"
+                onClick={() => setIsMenuOpen(false)}
               >
                 Stores
               </Link>
+              <Link
+                to="/about"
+                className="text-gray-700 hover:text-green-600 transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                About
+              </Link>
+              
               {user ? (
                 <>
-                  <Link 
-                    to="/profile" 
-                    className="text-lg font-medium hover:text-green-600 transition-colors"
-                    onClick={() => setIsOpen(false)}
+                  <Link
+                    to="/profile"
+                    className="text-gray-700 hover:text-green-600 transition-colors"
+                    onClick={() => setIsMenuOpen(false)}
                   >
                     Profile
                   </Link>
-                  <Link 
-                    to="/my-store" 
-                    className="text-lg font-medium hover:text-green-600 transition-colors"
-                    onClick={() => setIsOpen(false)}
+                  <Link
+                    to="/my-store"
+                    className="text-gray-700 hover:text-green-600 transition-colors"
+                    onClick={() => setIsMenuOpen(false)}
                   >
                     My Store
                   </Link>
-                  <Link 
-                    to="/chat" 
-                    className="text-lg font-medium hover:text-green-600 transition-colors"
-                    onClick={() => setIsOpen(false)}
+                  <Link
+                    to="/chat"
+                    className="text-gray-700 hover:text-green-600 transition-colors"
+                    onClick={() => setIsMenuOpen(false)}
                   >
                     Chat
                   </Link>
-                  <Link 
-                    to="/notifications" 
-                    className="text-lg font-medium hover:text-green-600 transition-colors"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    Notifications
-                  </Link>
-                  <Button 
+                  <Button
+                    variant="ghost"
+                    className="justify-start px-0 text-gray-700 hover:text-green-600"
                     onClick={() => {
                       handleSignOut();
-                      setIsOpen(false);
-                    }} 
-                    variant="outline" 
-                    className="justify-start"
+                      setIsMenuOpen(false);
+                    }}
                   >
+                    <LogOut className="h-4 w-4 mr-2" />
                     Sign Out
                   </Button>
                 </>
               ) : (
-                <div className="flex flex-col space-y-2">
-                  <Link to="/auth" onClick={() => setIsOpen(false)}>
-                    <Button variant="ghost" className="w-full justify-start">
-                      Sign In
-                    </Button>
-                  </Link>
-                  <Link to="/auth" onClick={() => setIsOpen(false)}>
-                    <Button className="w-full bg-green-600 hover:bg-green-700">
-                      Sign Up
-                    </Button>
-                  </Link>
-                </div>
+                <Link to="/auth" onClick={() => setIsMenuOpen(false)}>
+                  <Button className="bg-green-600 hover:bg-green-700 w-full">
+                    Sign In
+                  </Button>
+                </Link>
               )}
             </nav>
-          </SheetContent>
-        </Sheet>
+          </div>
+        )}
       </div>
     </header>
   );
