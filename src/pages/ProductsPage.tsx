@@ -9,9 +9,9 @@ const ProductsPage = () => {
       <Header />
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Agricultural Products</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">All Products</h1>
           <p className="text-gray-600">
-            Discover fresh produce, livestock, and farm equipment from verified sellers across Kenya
+            Browse our complete collection of agricultural products from verified sellers
           </p>
         </div>
         <ProductList />
