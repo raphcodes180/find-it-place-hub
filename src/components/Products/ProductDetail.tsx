@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -45,8 +44,9 @@ export const ProductDetail = () => {
             description,
             phone_number,
             email,
+            owner_id,
             counties!inner (name),
-            profiles!inner (full_name, phone_number, show_phone_number)
+            profiles!inner (id, full_name, phone_number, show_phone_number)
           ),
           counties!inner (name),
           sub_counties (name),
@@ -81,7 +81,7 @@ export const ProductDetail = () => {
         .from('chats')
         .select('id')
         .eq('buyer_id', user.id)
-        .eq('seller_id', product.stores.profiles.id)
+        .eq('seller_id', product.stores.owner_id)
         .eq('product_id', product.id)
         .single();
 
@@ -92,7 +92,7 @@ export const ProductDetail = () => {
           .from('chats')
           .insert({
             buyer_id: user.id,
-            seller_id: product.stores.profiles.id,
+            seller_id: product.stores.owner_id,
             product_id: product.id
           })
           .select('id')
