@@ -11,6 +11,15 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, Search, Filter, ChevronDown, ChevronUp, X } from 'lucide-react';
 import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
@@ -31,6 +40,8 @@ interface Filters {
   priceRange: { min: number; max: number };
 }
 
+const ITEMS_PER_PAGE = 12;
+
 export const ProductList = () => {
   const [filters, setFilters] = useState<Filters>({
     search: '',
@@ -38,6 +49,7 @@ export const ProductList = () => {
     county: 'all',
     priceRange: { min: 0, max: Infinity }
   });
+  const [currentPage, setCurrentPage] = useState(1);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [localSearch, setLocalSearch] = useState('');
   const [localCategory, setLocalCategory] = useState('all');
@@ -59,10 +71,49 @@ export const ProductList = () => {
     }
   });
 
-  // Fetch products with filters
-  const { data: products = [], isLoading, error } = useQuery({
-    queryKey: ['products', filters],
+  // Fetch total count of products
+  const { data: totalCount = 0 } = useQuery({
+    queryKey: ['products-count', filters],
     queryFn: async () => {
+      let query = supabase
+        .from('products')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_active', true);
+
+      if (filters.search) {
+        query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
+      }
+      
+      if (filters.category && filters.category !== 'all') {
+        query = query.eq('category', filters.category as ProductCategory);
+      }
+      
+      if (filters.county && filters.county !== 'all') {
+        query = query.eq('county_id', parseInt(filters.county));
+      }
+      
+      if (filters.priceRange.min > 0) {
+        query = query.gte('price', filters.priceRange.min);
+      }
+      
+      if (filters.priceRange.max < Infinity) {
+        query = query.lte('price', filters.priceRange.max);
+      }
+
+      const { count, error } = await query;
+      
+      if (error) throw error;
+      return count || 0;
+    }
+  });
+
+  // Fetch products with pagination
+  const { data: products = [], isLoading, error } = useQuery({
+    queryKey: ['products', filters, currentPage],
+    queryFn: async () => {
+      const from = (currentPage - 1) * ITEMS_PER_PAGE;
+      const to = from + ITEMS_PER_PAGE - 1;
+
       let query = supabase
         .from('products')
         .select(`
@@ -75,9 +126,9 @@ export const ProductList = () => {
           sub_counties (name),
           product_images (image_url, is_primary)
         `)
-        .eq('is_active', true);
+        .eq('is_active', true)
+        .range(from, to);
 
-      // Apply filters
       if (filters.search) {
         query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
       }
@@ -105,6 +156,8 @@ export const ProductList = () => {
     }
   });
 
+  const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
+
   const handleApplyFilters = () => {
     setFilters({
       search: localSearch,
@@ -115,6 +168,7 @@ export const ProductList = () => {
         max: localMaxPrice ? parseInt(localMaxPrice) : Infinity
       }
     });
+    setCurrentPage(1); // Reset to first page when filters change
   };
 
   const handleClearFilters = () => {
@@ -129,6 +183,32 @@ export const ProductList = () => {
       county: 'all',
       priceRange: { min: 0, max: Infinity }
     });
+    setCurrentPage(1);
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const generatePageNumbers = () => {
+    const pages = [];
+    const maxVisiblePages = 5;
+    
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      const startPage = Math.max(1, currentPage - 2);
+      const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+      
+      for (let i = startPage; i <= endPage; i++) {
+        pages.push(i);
+      }
+    }
+    
+    return pages;
   };
 
   if (error) {
@@ -235,10 +315,22 @@ export const ProductList = () => {
         </CollapsibleContent>
       </Collapsible>
 
+      {/* Results Summary */}
+      <div className="flex justify-between items-center text-sm text-gray-600">
+        <span>
+          Showing {products.length > 0 ? ((currentPage - 1) * ITEMS_PER_PAGE) + 1 : 0} - {Math.min(currentPage * ITEMS_PER_PAGE, totalCount)} of {totalCount} products
+        </span>
+        {totalPages > 1 && (
+          <span>
+            Page {currentPage} of {totalPages}
+          </span>
+        )}
+      </div>
+
       {/* Products Grid */}
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {Array.from({ length: 8 }).map((_, i) => (
+          {Array.from({ length: ITEMS_PER_PAGE }).map((_, i) => (
             <div key={i} className="space-y-3">
               <Skeleton className="h-48 w-full" />
               <Skeleton className="h-4 w-3/4" />
@@ -275,6 +367,71 @@ export const ProductList = () => {
               }}
             />
           ))}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex justify-center mt-8">
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious 
+                  onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
+                  className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                />
+              </PaginationItem>
+              
+              {currentPage > 3 && (
+                <>
+                  <PaginationItem>
+                    <PaginationLink onClick={() => handlePageChange(1)} className="cursor-pointer">
+                      1
+                    </PaginationLink>
+                  </PaginationItem>
+                  {currentPage > 4 && (
+                    <PaginationItem>
+                      <PaginationEllipsis />
+                    </PaginationItem>
+                  )}
+                </>
+              )}
+
+              {generatePageNumbers().map((page) => (
+                <PaginationItem key={page}>
+                  <PaginationLink
+                    onClick={() => handlePageChange(page)}
+                    isActive={currentPage === page}
+                    className="cursor-pointer"
+                  >
+                    {page}
+                  </PaginationLink>
+                </PaginationItem>
+              ))}
+
+              {currentPage < totalPages - 2 && (
+                <>
+                  {currentPage < totalPages - 3 && (
+                    <PaginationItem>
+                      <PaginationEllipsis />
+                    </PaginationItem>
+                  )}
+                  <PaginationItem>
+                    <PaginationLink onClick={() => handlePageChange(totalPages)} className="cursor-pointer">
+                      {totalPages}
+                    </PaginationLink>
+                  </PaginationItem>
+                </>
+              )}
+
+              <PaginationItem>
+                <PaginationNext 
+                  onClick={() => currentPage < totalPages && handlePageChange(currentPage + 1)}
+                  className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
         </div>
       )}
     </div>
