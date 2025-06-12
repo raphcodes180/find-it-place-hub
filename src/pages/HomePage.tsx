@@ -63,7 +63,7 @@ const HomePage = () => {
     },
   });
 
-  const totalPages = Math.ceil((productsData?.length || 0) / itemsPerPage);
+  const totalPages = Math.ceil((productsData?.total || 0) / itemsPerPage);
 
   const handleCategoryChange = (category: string) => {
     setSelectedCategory(category as ProductCategory | '');
@@ -127,7 +127,7 @@ const HomePage = () => {
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold text-gray-900">
                 Available Products ({productsData?.total || 0})
-                {console.log("products data: ", productsData)}
+                {console.log("products data: ", productsData.length)}
               </h2>
             </div>
 
