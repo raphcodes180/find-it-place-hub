@@ -1,3 +1,10 @@
+-- Create the user_type enum if it doesnt exist
+DO $$ BEGIN
+    CREATE TYPE user_type AS ENUM ('buyer', 'seller');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
 
 -- Create avatars storage bucket
 INSERT INTO storage.buckets (id, name, public) VALUES ('avatars', 'avatars', true);

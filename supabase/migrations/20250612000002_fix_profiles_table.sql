@@ -1,3 +1,10 @@
+-- Create the user_type enum if it doesnt exist
+DO $$ BEGIN
+    CREATE TYPE user_type AS ENUM ('buyer', 'seller');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
 
 -- Ensure the profiles table exists and the trigger works properly
 DO $$ 

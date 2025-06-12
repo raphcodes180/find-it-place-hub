@@ -1,3 +1,4 @@
+CREATE TYPE public.user_type AS ENUM ('buyer', 'seller');
 
 -- Create the user_type enum if it doesnt exist
 DO $$ BEGIN

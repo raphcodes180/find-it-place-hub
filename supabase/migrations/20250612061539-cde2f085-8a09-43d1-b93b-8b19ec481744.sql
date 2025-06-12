@@ -6,7 +6,7 @@ DROP TABLE IF EXISTS public.profiles CASCADE;
 DROP TYPE IF EXISTS public.user_type CASCADE;
 
 -- Create user_type enum
-CREATE TYPE public.user_type AS ENUM ('buyer', 'seller', 'admin');
+CREATE TYPE public.user_type AS ENUM ('buyer', 'seller');
 
 -- Create profiles table with proper structure
 CREATE TABLE public.profiles (
