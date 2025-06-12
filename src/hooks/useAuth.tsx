@@ -69,7 +69,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         options: {
           emailRedirectTo: redirectUrl,
           data: {
-            full_name: fullName,
+            id: data.user.id,
+          full_name: fullName,
+          phone_number: phoneNumber,
+          user_type: userType
+            
           },
         },
       });
