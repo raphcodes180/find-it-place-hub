@@ -74,19 +74,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         },
       });
 
-        // Create profile record
-    if (data.user) {
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          id: data.user.id,
-          full_name: fullName,
-          phone_number: phoneNumber,
-          user_type: userType
-        });
-      if (profileError) throw profileError;
-    }
-
+  
       if (error) {
         console.error('Signup error:', error);
         toast({
