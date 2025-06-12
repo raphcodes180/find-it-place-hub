@@ -326,6 +326,7 @@ export type Database = {
           name: string
           owner_id: string | null
           phone_number: string | null
+          show_phone_number: boolean | null
           store_image_url: string | null
           sub_county_id: number | null
           updated_at: string | null
@@ -341,6 +342,7 @@ export type Database = {
           name: string
           owner_id?: string | null
           phone_number?: string | null
+          show_phone_number?: boolean | null
           store_image_url?: string | null
           sub_county_id?: number | null
           updated_at?: string | null
@@ -356,6 +358,7 @@ export type Database = {
           name?: string
           owner_id?: string | null
           phone_number?: string | null
+          show_phone_number?: boolean | null
           store_image_url?: string | null
           sub_county_id?: number | null
           updated_at?: string | null

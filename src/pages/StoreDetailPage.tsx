@@ -1,3 +1,4 @@
+
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -5,7 +6,6 @@ import { Header } from '@/components/Layout/Header';
 import { Footer } from '@/components/Layout/Footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Store, Package, MapPin, Phone, Mail, AlertCircle } from 'lucide-react';
@@ -23,7 +23,6 @@ const StoreDetailPage = () => {
         .from('stores')
         .select(`
           *,
-          profiles!stores_owner_id_fkey(full_name, phone_number, email),
           counties(name),
           sub_counties(name),
           wards(name)
@@ -33,6 +32,21 @@ const StoreDetailPage = () => {
         .single();
       
       if (error) throw error;
+
+      // Fetch profile separately if we have an owner_id
+      if (data?.owner_id) {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('full_name, phone_number, email')
+          .eq('id', data.owner_id)
+          .single();
+
+        return {
+          ...data,
+          profiles: profileData
+        };
+      }
+
       return data;
     },
     enabled: !!id
@@ -137,7 +151,7 @@ const StoreDetailPage = () => {
                   <div>
                     <CardTitle className="text-2xl">{store?.name}</CardTitle>
                     <p className="text-gray-600 mt-1">
-                      by {store?.profiles?.full_name}
+                      by {store?.profiles?.full_name || 'Unknown Owner'}
                     </p>
                     <div className="flex items-center text-sm text-gray-500 mt-2">
                       <MapPin className="h-4 w-4 mr-1" />
@@ -165,16 +179,16 @@ const StoreDetailPage = () => {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {store?.phone_number && (
+                {(store?.phone_number || store?.profiles?.phone_number) && (
                   <div className="flex items-center space-x-2">
                     <Phone className="h-4 w-4 text-gray-500" />
-                    <span>{store.phone_number}</span>
+                    <span>{store?.phone_number || store?.profiles?.phone_number}</span>
                   </div>
                 )}
-                {store?.email && (
+                {(store?.email || store?.profiles?.email) && (
                   <div className="flex items-center space-x-2">
                     <Mail className="h-4 w-4 text-gray-500" />
-                    <span>{store.email}</span>
+                    <span>{store?.email || store?.profiles?.email}</span>
                   </div>
                 )}
               </div>

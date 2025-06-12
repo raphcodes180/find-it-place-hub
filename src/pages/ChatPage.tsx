@@ -22,11 +22,11 @@ interface Chat {
   products: {
     title: string;
   };
-  buyer_profile: {
+  buyer_profile?: {
     full_name: string;
     profile_picture_url?: string;
   };
-  seller_profile: {
+  seller_profile?: {
     full_name: string;
     profile_picture_url?: string;
   };
@@ -72,15 +72,38 @@ const ChatPage = () => {
           product_id,
           last_message_at,
           created_at,
-          products!inner(title),
-          buyer_profile:profiles!buyer_id(full_name, profile_picture_url),
-          seller_profile:profiles!seller_id(full_name, profile_picture_url)
+          products!inner(title)
         `)
         .or(`buyer_id.eq.${user?.id},seller_id.eq.${user?.id}`)
         .order('last_message_at', { ascending: false });
 
       if (error) throw error;
-      setChats(data || []);
+
+      // Fetch profiles separately for each chat
+      const chatsWithProfiles = await Promise.all(
+        (data || []).map(async (chat) => {
+          const [buyerProfile, sellerProfile] = await Promise.all([
+            supabase
+              .from('profiles')
+              .select('full_name, profile_picture_url')
+              .eq('id', chat.buyer_id)
+              .single(),
+            supabase
+              .from('profiles')
+              .select('full_name, profile_picture_url')
+              .eq('id', chat.seller_id)
+              .single()
+          ]);
+
+          return {
+            ...chat,
+            buyer_profile: buyerProfile.data || undefined,
+            seller_profile: sellerProfile.data || undefined
+          };
+        })
+      );
+
+      setChats(chatsWithProfiles);
     } catch (error) {
       console.error('Error fetching chats:', error);
       toast({
@@ -156,55 +179,6 @@ const ChatPage = () => {
       toast({
         title: "Error",
         description: "Failed to send message",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const createNewChat = async (productId: string, sellerId: string) => {
-    if (!user) return;
-
-    try {
-      const { data: existingChat, error: fetchError } = await supabase
-        .from('chats')
-        .select('id')
-        .eq('buyer_id', user.id)
-        .eq('seller_id', sellerId)
-        .eq('product_id', productId)
-        .single();
-
-      if (fetchError && fetchError.code !== 'PGRST116') {
-        throw fetchError;
-      }
-
-      if (existingChat) {
-        // Chat already exists, select it
-        const chatData = chats.find(chat => chat.id === existingChat.id);
-        if (chatData) {
-          setSelectedChat(chatData);
-        }
-        return;
-      }
-
-      // Create new chat
-      const { data: newChat, error: createError } = await supabase
-        .from('chats')
-        .insert({
-          buyer_id: user.id,
-          seller_id: sellerId,
-          product_id: productId,
-        })
-        .select()
-        .single();
-
-      if (createError) throw createError;
-
-      await fetchChats();
-    } catch (error) {
-      console.error('Error creating chat:', error);
-      toast({
-        title: "Error",
-        description: "Failed to create conversation",
         variant: "destructive",
       });
     }
