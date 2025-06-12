@@ -49,7 +49,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const redirectUrl = `${window.location.origin}/`;
       console.log('Signing up with redirect URL:', redirectUrl);
       console.log(userType)
-   
+
+    //    // Create profile record
+    // if (data.user) {
+    //   const { error: profileError } = await supabase
+    //     .from('profiles')
+    //     .insert({
+    //       id: data.user.id,
+    //       full_name: fullName,
+    //       phone_number: phoneNumber,
+    //       user_type: userType
+    //     });
+    //   if (profileError) throw profileError;
+    // }
+      
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -71,8 +84,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { error };
       }
 
-      console.log("data: ", data)
-
       // Create profile record
     // if (data.user) {
     //   const { error: profileError } = await supabase
@@ -84,7 +95,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     //       user_type: userType
     //     });
     //   if (profileError) throw profileError;
-    }
+    // }
+
+      console.log(data)
 
       console.log('Signup successful:', data);
       toast({
