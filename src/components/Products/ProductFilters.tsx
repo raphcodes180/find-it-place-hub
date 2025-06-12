@@ -2,9 +2,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Slider } from '@/components/ui/slider';
+import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
 
 const categories = [
   { value: 'crops', label: 'Crops' },
@@ -57,7 +58,7 @@ export const ProductFilters = ({
   const clearFilters = () => {
     onCategoryChange('');
     onCountyChange('');
-    onPriceRangeChange([0, 10000]);
+    onPriceRangeChange([0, 50000]);
   };
 
   // Handle category change to convert "all" back to empty string
@@ -70,13 +71,23 @@ export const ProductFilters = ({
     onCountyChange(value === 'all' ? '' : value);
   };
 
+  const handleMinPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = Number(e.target.value) || 0;
+    onPriceRangeChange([value, priceRange[1]]);
+  };
+
+  const handleMaxPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = Number(e.target.value) || 50000;
+    onPriceRangeChange([priceRange[0], value]);
+  };
+
   return (
     <Card className="bg-white/10 backdrop-blur-sm border-white/20">
       <CardContent className="p-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
           {/* Category Filter */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-white">Category</label>
+            <Label className="text-sm font-medium text-white">Category</Label>
             <Select value={selectedCategory || 'all'} onValueChange={handleCategoryChange}>
               <SelectTrigger className="bg-white text-gray-900">
                 <SelectValue placeholder="All categories" />
@@ -94,7 +105,7 @@ export const ProductFilters = ({
 
           {/* County Filter */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-white">County</label>
+            <Label className="text-sm font-medium text-white">County</Label>
             <Select value={selectedCounty || 'all'} onValueChange={handleCountyChange}>
               <SelectTrigger className="bg-white text-gray-900">
                 <SelectValue placeholder="All counties" />
@@ -110,21 +121,28 @@ export const ProductFilters = ({
             </Select>
           </div>
 
-          {/* Price Range Filter */}
+          {/* Min Price Filter */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-white">
-              Price Range: KES {priceRange[0].toLocaleString()} - {priceRange[1].toLocaleString()}
-            </label>
-            <div className="px-2">
-              <Slider
-                value={priceRange}
-                onValueChange={(value) => onPriceRangeChange(value as [number, number])}
-                max={10000}
-                min={0}
-                step={100}
-                className="w-full"
-              />
-            </div>
+            <Label className="text-sm font-medium text-white">Min Price (KES)</Label>
+            <Input
+              type="number"
+              value={priceRange[0]}
+              onChange={handleMinPriceChange}
+              placeholder="0"
+              className="bg-white text-gray-900"
+            />
+          </div>
+
+          {/* Max Price Filter */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-white">Max Price (KES)</Label>
+            <Input
+              type="number"
+              value={priceRange[1]}
+              onChange={handleMaxPriceChange}
+              placeholder="50000"
+              className="bg-white text-gray-900"
+            />
           </div>
 
           {/* Clear Filters */}

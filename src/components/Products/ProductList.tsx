@@ -107,7 +107,7 @@ export const ProductList = () => {
     }
   });
 
-  // Fetch products with pagination
+  // Fetch products with pagination - removed problematic inner join
   const { data: products = [], isLoading, error } = useQuery({
     queryKey: ['products', filters, currentPage],
     queryFn: async () => {
@@ -118,11 +118,11 @@ export const ProductList = () => {
         .from('products')
         .select(`
           *,
-          stores!inner (
+          stores (
             name,
-            counties!inner (name)
+            owner_id
           ),
-          counties!inner (name),
+          counties (name),
           sub_counties (name),
           product_images (image_url, is_primary)
         `)
@@ -358,11 +358,11 @@ export const ProductList = () => {
               subcategory={product.subcategory}
               images={product.product_images || []}
               store={{
-                name: product.stores.name,
-                county: product.stores.counties.name
+                name: product.stores?.name || '',
+                county: product.counties?.name || ''
               }}
               location={{
-                county: product.counties.name,
+                county: product.counties?.name || '',
                 sub_county: product.sub_counties?.name
               }}
             />

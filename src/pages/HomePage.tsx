@@ -17,11 +17,11 @@ const HomePage = () => {
   const [selectedCategory, setSelectedCategory] = useState<ProductCategory | ''>('');
   const [selectedCounty, setSelectedCounty] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 50000]);
   
   const itemsPerPage = 12;
 
-  // Fetch products with filters
+  // Fetch products with filters - removed problematic inner join
   const { data: productsData, isLoading } = useQuery({
     queryKey: ['products', searchTerm, selectedCategory, selectedCounty, currentPage, priceRange],
     queryFn: async () => {
@@ -29,9 +29,9 @@ const HomePage = () => {
         .from('products')
         .select(`
           *,
-          stores!inner(
+          stores(
             name,
-            profiles!inner(full_name)
+            owner_id
           ),
           product_images(image_url, is_primary),
           counties(name),
