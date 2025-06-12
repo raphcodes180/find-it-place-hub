@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -14,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { ImageUpload } from '@/components/ui/image-upload';
 
 const CreateStorePage = () => {
   const { user } = useAuth();
@@ -27,6 +27,7 @@ const CreateStorePage = () => {
     ward_id: '',
     phone_number: '',
     email: '',
+    store_image_url: '',
   });
 
   // Fetch counties
@@ -91,6 +92,7 @@ const CreateStorePage = () => {
           ward_id: formData.ward_id ? parseInt(formData.ward_id) : null,
           phone_number: formData.phone_number,
           email: formData.email,
+          store_image_url: formData.store_image_url,
         });
 
       if (error) throw error;
@@ -138,6 +140,13 @@ const CreateStorePage = () => {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-6">
+                <ImageUpload
+                  bucket="store-images"
+                  label="Store Image"
+                  currentImage={formData.store_image_url}
+                  onImageUploaded={(url) => setFormData({ ...formData, store_image_url: url })}
+                />
+
                 <div>
                   <Label htmlFor="name">Store Name *</Label>
                   <Input

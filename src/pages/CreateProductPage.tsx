@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -14,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { ImageUpload } from '@/components/ui/image-upload';
 
 const CreateProductPage = () => {
   const { user } = useAuth();
@@ -31,6 +31,7 @@ const CreateProductPage = () => {
     county_id: '',
     sub_county_id: '',
     ward_id: '',
+    image_url: '',
   });
 
   const categories = [
@@ -74,7 +75,7 @@ const CreateProductPage = () => {
 
     setLoading(true);
     try {
-      const { error } = await supabase
+      const { data: product, error: productError } = await supabase
         .from('products')
         .insert({
           store_id: formData.store_id,
@@ -88,9 +89,24 @@ const CreateProductPage = () => {
           county_id: parseInt(formData.county_id),
           sub_county_id: formData.sub_county_id ? parseInt(formData.sub_county_id) : null,
           ward_id: formData.ward_id ? parseInt(formData.ward_id) : null,
-        });
+        })
+        .select()
+        .single();
 
-      if (error) throw error;
+      if (productError) throw productError;
+
+      // If there's an image, save it to product_images table
+      if (formData.image_url && product) {
+        const { error: imageError } = await supabase
+          .from('product_images')
+          .insert({
+            product_id: product.id,
+            image_url: formData.image_url,
+            is_primary: true,
+          });
+
+        if (imageError) console.error('Error saving product image:', imageError);
+      }
 
       toast({
         title: "Product Created Successfully!",
@@ -171,6 +187,13 @@ const CreateProductPage = () => {
                     </SelectContent>
                   </Select>
                 </div>
+
+                <ImageUpload
+                  bucket="product-images"
+                  label="Product Image"
+                  currentImage={formData.image_url}
+                  onImageUploaded={(url) => setFormData({ ...formData, image_url: url })}
+                />
 
                 <div>
                   <Label htmlFor="title">Product Title *</Label>
