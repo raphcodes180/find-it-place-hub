@@ -138,6 +138,9 @@ export const ProductDetail = () => {
   const primaryImage = images.find(img => img.is_primary) || images[0];
   const displayImages = primaryImage ? [primaryImage, ...images.filter(img => !img.is_primary)] : [];
 
+  // Type guard to check if store has profiles
+  const storeWithProfiles = product.stores && 'profiles' in product.stores ? product.stores : null;
+
   return (
     <div className="container mx-auto px-4 py-8">
       <Button
@@ -235,15 +238,15 @@ export const ProductDetail = () => {
             <CardContent className="space-y-4">
               <div className="flex items-center gap-3">
                 <Avatar>
-                  <AvatarImage src={product.stores?.profiles?.profile_picture_url} />
+                  <AvatarImage src={storeWithProfiles?.profiles?.profile_picture_url} />
                   <AvatarFallback>
-                    {product.stores?.profiles?.full_name?.charAt(0) || 'S'}
+                    {storeWithProfiles?.profiles?.full_name?.charAt(0) || product.stores?.name?.charAt(0) || 'S'}
                   </AvatarFallback>
                 </Avatar>
                 <div>
                   <h4 className="font-semibold">{product.stores?.name}</h4>
                   <p className="text-sm text-gray-600">
-                    Owner: {product.stores?.profiles?.full_name || 'Unknown'}
+                    Owner: {storeWithProfiles?.profiles?.full_name || 'Unknown'}
                   </p>
                 </div>
               </div>

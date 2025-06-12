@@ -127,6 +127,9 @@ const StoreDetailPage = () => {
     );
   }
 
+  // Type guard to check if store has profiles
+  const storeWithProfiles = store && 'profiles' in store ? store : null;
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -151,7 +154,7 @@ const StoreDetailPage = () => {
                   <div>
                     <CardTitle className="text-2xl">{store?.name}</CardTitle>
                     <p className="text-gray-600 mt-1">
-                      by {store?.profiles?.full_name || 'Unknown Owner'}
+                      by {storeWithProfiles?.profiles?.full_name || 'Unknown Owner'}
                     </p>
                     <div className="flex items-center text-sm text-gray-500 mt-2">
                       <MapPin className="h-4 w-4 mr-1" />
@@ -179,16 +182,16 @@ const StoreDetailPage = () => {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {(store?.phone_number || store?.profiles?.phone_number) && (
+                {(store?.phone_number || storeWithProfiles?.profiles?.phone_number) && (
                   <div className="flex items-center space-x-2">
                     <Phone className="h-4 w-4 text-gray-500" />
-                    <span>{store?.phone_number || store?.profiles?.phone_number}</span>
+                    <span>{store?.phone_number || storeWithProfiles?.profiles?.phone_number}</span>
                   </div>
                 )}
-                {(store?.email || store?.profiles?.email) && (
+                {(store?.email || storeWithProfiles?.profiles?.email) && (
                   <div className="flex items-center space-x-2">
                     <Mail className="h-4 w-4 text-gray-500" />
-                    <span>{store?.email || store?.profiles?.email}</span>
+                    <span>{store?.email || storeWithProfiles?.profiles?.email}</span>
                   </div>
                 )}
               </div>
