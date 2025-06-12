@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -25,6 +24,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.email);
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
@@ -33,6 +33,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('Initial session:', session?.user?.email);
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -42,35 +43,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const signUp = async (email: string, password: string, fullName: string, phoneNumber: string, userType: 'buyer' | 'seller') => {
-    const redirectUrl = `${window.location.origin}/`;
-    
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: {
-          full_name: fullName,
-          phone_number: phoneNumber,
-          user_type: userType,
+    try {
+      const redirectUrl = `${window.location.origin}/`;
+      console.log('Signing up with redirect URL:', redirectUrl);
+      
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: redirectUrl,
+          data: {
+            full_name: fullName,
+            phone_number: phoneNumber,
+            user_type: userType,
+          },
         },
-      },
-    });
+      });
 
-    if (error) {
-      toast({
-        title: "Sign up failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
-      toast({
-        title: "Account created successfully!",
-        description: "Please check your email to verify your account.",
-      });
+      if (error) {
+        console.error('Signup error:', error);
+        throw error;
+      }
+
+      console.log('Signup successful:', data);
+      return { error: null };
+    } catch (error: any) {
+      console.error('Signup failed:', error);
+      return { error };
     }
-
-    return { error };
   };
 
   const signIn = async (email: string, password: string) => {
