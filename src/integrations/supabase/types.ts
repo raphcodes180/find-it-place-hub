@@ -279,7 +279,7 @@ export type Database = {
           county_id: number | null
           created_at: string | null
           email: string
-          full_name: string | null
+          full_name: string
           id: string
           notifications_enabled: boolean | null
           phone_number: string | null
@@ -294,7 +294,7 @@ export type Database = {
           county_id?: number | null
           created_at?: string | null
           email: string
-          full_name?: string | null
+          full_name: string
           id: string
           notifications_enabled?: boolean | null
           phone_number?: string | null
@@ -309,7 +309,7 @@ export type Database = {
           county_id?: number | null
           created_at?: string | null
           email?: string
-          full_name?: string | null
+          full_name?: string
           id?: string
           notifications_enabled?: boolean | null
           phone_number?: string | null
@@ -501,7 +501,7 @@ export type Database = {
         | "seeds"
         | "fertilizers"
         | "pesticides"
-      user_type: "buyer" | "seller"
+      user_type: "buyer" | "seller" | "admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -639,7 +639,7 @@ export const Constants = {
         "fertilizers",
         "pesticides",
       ],
-      user_type: ["buyer", "seller"],
+      user_type: ["buyer", "seller", "admin"],
     },
   },
 } as const

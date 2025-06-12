@@ -3,52 +3,85 @@ import { Link } from 'react-router-dom';
 
 export const Footer = () => {
   return (
-    <footer className="bg-gray-50 border-t mt-auto">
-      <div className="container px-4 py-8 mx-auto">
+    <footer className="bg-gray-900 text-white">
+      <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+          {/* Brand */}
           <div className="space-y-4">
             <div className="flex items-center space-x-2">
-              <div className="h-8 w-8 bg-green-600 rounded-full flex items-center justify-center text-white font-bold">
-                J
+              <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
+                <span className="text-white font-bold text-sm">AM</span>
               </div>
-              <span className="text-xl font-bold text-green-600">Jikagri</span>
+              <span className="font-bold text-xl">AgriMarket</span>
             </div>
-            <p className="text-gray-600 text-sm">
-              Connecting farmers and buyers across Kenya. Quality agricultural products at your fingertips.
+            <p className="text-gray-400 text-sm">
+              Connecting farmers and buyers across Kenya. Fresh produce, fair prices, direct from farm to table.
             </p>
           </div>
-          
-          <div>
-            <h3 className="font-semibold text-gray-900 mb-4">Quick Links</h3>
-            <ul className="space-y-2 text-sm">
-              <li><Link to="/products" className="text-gray-600 hover:text-green-600">Products</Link></li>
-              <li><Link to="/stores" className="text-gray-600 hover:text-green-600">Stores</Link></li>
-              <li><Link to="/auth" className="text-gray-600 hover:text-green-600">Sign Up</Link></li>
-            </ul>
+
+          {/* Quick Links */}
+          <div className="space-y-4">
+            <h3 className="font-semibold text-lg">Quick Links</h3>
+            <div className="space-y-2">
+              <Link to="/" className="block text-gray-400 hover:text-white text-sm">
+                Home
+              </Link>
+              <Link to="/stores" className="block text-gray-400 hover:text-white text-sm">
+                Browse Stores
+              </Link>
+              <Link to="/auth" className="block text-gray-400 hover:text-white text-sm">
+                Sign Up
+              </Link>
+            </div>
           </div>
-          
-          <div>
-            <h3 className="font-semibold text-gray-900 mb-4">Support</h3>
-            <ul className="space-y-2 text-sm">
-              <li><Link to="/faq" className="text-gray-600 hover:text-green-600">FAQ</Link></li>
-              <li><Link to="/terms" className="text-gray-600 hover:text-green-600">Terms of Service</Link></li>
-              <li><a href="mailto:support@jikagri.co.ke" className="text-gray-600 hover:text-green-600">Contact Us</a></li>
-            </ul>
+
+          {/* For Sellers */}
+          <div className="space-y-4">
+            <h3 className="font-semibold text-lg">For Sellers</h3>
+            <div className="space-y-2">
+              <Link to="/create-store" className="block text-gray-400 hover:text-white text-sm">
+                Create Store
+              </Link>
+              <Link to="/my-store" className="block text-gray-400 hover:text-white text-sm">
+                Manage Store
+              </Link>
+              <Link to="/create-product" className="block text-gray-400 hover:text-white text-sm">
+                Add Products
+              </Link>
+            </div>
           </div>
-          
-          <div>
-            <h3 className="font-semibold text-gray-900 mb-4">Location</h3>
-            <p className="text-gray-600 text-sm">
-              Nairobi, Kenya<br />
-              East Africa
-            </p>
+
+          {/* Support */}
+          <div className="space-y-4">
+            <h3 className="font-semibold text-lg">Support</h3>
+            <div className="space-y-2">
+              <Link to="/faq" className="block text-gray-400 hover:text-white text-sm">
+                FAQ
+              </Link>
+              <Link to="/terms" className="block text-gray-400 hover:text-white text-sm">
+                Terms of Service
+              </Link>
+              <a href="mailto:support@agrimarket.co.ke" className="block text-gray-400 hover:text-white text-sm">
+                Contact Support
+              </a>
+            </div>
           </div>
         </div>
-        
-        <div className="border-t pt-8 mt-8">
-          <p className="text-center text-gray-600 text-sm">
-            © 2024 Jikagri. All rights reserved. Made with ❤️ in Kenya.
-          </p>
+
+        <div className="border-t border-gray-800 mt-12 pt-8">
+          <div className="flex flex-col md:flex-row justify-between items-center">
+            <p className="text-gray-400 text-sm">
+              © 2024 AgriMarket Kenya. All rights reserved.
+            </p>
+            <div className="flex space-x-6 mt-4 md:mt-0">
+              <Link to="/terms" className="text-gray-400 hover:text-white text-sm">
+                Privacy Policy
+              </Link>
+              <Link to="/terms" className="text-gray-400 hover:text-white text-sm">
+                Terms of Service
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
     </footer>
