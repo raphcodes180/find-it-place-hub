@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -44,6 +45,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signUp = async (email: string, password: string, fullName: string, phoneNumber: string, userType: 'buyer' | 'seller') => {
     try {
+      setLoading(true);
       const redirectUrl = `${window.location.origin}/`;
       console.log('Signing up with redirect URL:', redirectUrl);
       
@@ -62,40 +64,91 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) {
         console.error('Signup error:', error);
-        throw error;
+        toast({
+          title: "Sign up failed",
+          description: error.message,
+          variant: "destructive",
+        });
+        return { error };
       }
 
       console.log('Signup successful:', data);
+      toast({
+        title: "Account created successfully!",
+        description: "Please check your email to verify your account before signing in.",
+      });
+      
       return { error: null };
     } catch (error: any) {
       console.error('Signup failed:', error);
+      toast({
+        title: "Signup Failed",
+        description: error.message || "An unexpected error occurred",
+        variant: "destructive",
+      });
       return { error };
+    } finally {
+      setLoading(false);
     }
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      setLoading(true);
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    if (error) {
+      if (error) {
+        console.error('Sign in error:', error);
+        toast({
+          title: "Sign in failed",
+          description: error.message,
+          variant: "destructive",
+        });
+        return { error };
+      }
+
+      console.log('Sign in successful:', data.user?.email);
+      toast({
+        title: "Welcome back!",
+        description: "You have been successfully signed in.",
+      });
+      
+      return { error: null };
+    } catch (error: any) {
+      console.error('Sign in failed:', error);
       toast({
         title: "Sign in failed",
-        description: error.message,
+        description: error.message || "An unexpected error occurred",
         variant: "destructive",
       });
+      return { error };
+    } finally {
+      setLoading(false);
     }
-
-    return { error };
   };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        toast({
+          title: "Sign out failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Signed out",
+          description: "You have been successfully signed out.",
+        });
+      }
+    } catch (error: any) {
       toast({
         title: "Sign out failed",
-        description: error.message,
+        description: error.message || "An unexpected error occurred",
         variant: "destructive",
       });
     }
@@ -104,17 +157,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateUserType = async (userType: 'buyer' | 'seller') => {
     if (!user) return;
 
-    const { error } = await supabase
-      .from('profiles')
-      .update({ user_type: userType })
-      .eq('id', user.id);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ user_type: userType })
+        .eq('id', user.id);
 
-    if (error) {
+      if (error) {
+        toast({
+          title: "Failed to update user type",
+          description: error.message,
+          variant: "destructive",
+        });
+        throw error;
+      }
+
       toast({
-        title: "Failed to update user type",
-        description: error.message,
-        variant: "destructive",
+        title: "User type updated",
+        description: `Your account type has been changed to ${userType}.`,
       });
+    } catch (error: any) {
+      console.error('Update user type failed:', error);
       throw error;
     }
   };

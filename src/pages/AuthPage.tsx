@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2 } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 
 const AuthPage = () => {
   const { user, signIn, signUp, loading } = useAuth();
@@ -44,37 +45,67 @@ const AuthPage = () => {
     e.preventDefault();
     setIsLoading(true);
 
-    const { error } = await signIn(signInData.email, signInData.password);
-    
-    if (!error) {
-      navigate('/');
+    try {
+      const { error } = await signIn(signInData.email, signInData.password);
+      
+      if (!error) {
+        navigate('/');
+      }
+    } catch (error: any) {
+      console.error('Sign in error:', error);
+    } finally {
+      setIsLoading(false);
     }
-    
-    setIsLoading(false);
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (signUpData.password !== signUpData.confirmPassword) {
+      toast({
+        title: "Error",
+        description: "Passwords do not match",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (signUpData.password.length < 6) {
+      toast({
+        title: "Error",
+        description: "Password must be at least 6 characters long",
+        variant: "destructive",
+      });
       return;
     }
 
     setIsLoading(true);
 
-    const { error } = await signUp(
-      signUpData.email,
-      signUpData.password,
-      signUpData.fullName,
-      signUpData.phoneNumber,
-      signUpData.userType
-    );
-    
-    if (!error) {
-      navigate('/');
+    try {
+      const { error } = await signUp(
+        signUpData.email,
+        signUpData.password,
+        signUpData.fullName,
+        signUpData.phoneNumber,
+        signUpData.userType
+      );
+      
+      if (!error) {
+        // Clear form on success
+        setSignUpData({
+          fullName: '',
+          email: '',
+          phoneNumber: '',
+          password: '',
+          confirmPassword: '',
+          userType: 'buyer',
+        });
+      }
+    } catch (error: any) {
+      console.error('Sign up error:', error);
+    } finally {
+      setIsLoading(false);
     }
-    
-    setIsLoading(false);
   };
 
   if (loading) {
@@ -215,6 +246,7 @@ const AuthPage = () => {
                         value={signUpData.password}
                         onChange={(e) => setSignUpData(prev => ({ ...prev, password: e.target.value }))}
                         required
+                        minLength={6}
                       />
                     </div>
 
@@ -227,6 +259,7 @@ const AuthPage = () => {
                         value={signUpData.confirmPassword}
                         onChange={(e) => setSignUpData(prev => ({ ...prev, confirmPassword: e.target.value }))}
                         required
+                        minLength={6}
                       />
                     </div>
 

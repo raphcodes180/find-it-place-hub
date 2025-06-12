@@ -101,7 +101,7 @@ const ProfilePage = () => {
       setFormData({
         full_name: profile.full_name || '',
         phone_number: profile.phone_number || '',
-        user_type: (profile.user_type === 'admin' ? 'seller' : profile.user_type) as UserType,
+        user_type: (profile.user_type === 'admin' ? 'buyer' : profile.user_type) as UserType,
         county_id: profile.county_id?.toString() || '',
         sub_county_id: profile.sub_county_id?.toString() || '',
         ward_id: profile.ward_id?.toString() || '',
@@ -135,16 +135,8 @@ const ProfilePage = () => {
   const handleSignOut = async () => {
     try {
       await signOut();
-      toast({
-        title: "Signed Out",
-        description: "You have been successfully signed out.",
-      });
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to sign out",
-        variant: "destructive",
-      });
+      console.error('Sign out error:', error);
     }
   };
 

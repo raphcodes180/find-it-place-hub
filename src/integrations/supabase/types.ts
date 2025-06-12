@@ -36,24 +36,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "chats_buyer_id_fkey"
-            columns: ["buyer_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "chats_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "chats_seller_id_fkey"
-            columns: ["seller_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -109,13 +95,6 @@ export type Database = {
             referencedRelation: "chats"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "messages_sender_id_fkey"
-            columns: ["sender_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
         ]
       }
       notifications: {
@@ -149,15 +128,7 @@ export type Database = {
           type?: Database["public"]["Enums"]["notification_type"]
           user_id?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "notifications_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       product_images: {
         Row: {
@@ -396,13 +367,6 @@ export type Database = {
             columns: ["county_id"]
             isOneToOne: false
             referencedRelation: "counties"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "stores_owner_id_fkey"
-            columns: ["owner_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {

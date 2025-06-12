@@ -12,7 +12,7 @@ import { toast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 
 const AuthPage = () => {
-  const { user, signIn, signUp } = useAuth();
+  const { user, signIn, signUp, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
@@ -33,7 +33,7 @@ const AuthPage = () => {
   });
 
   // Redirect if already authenticated
-  if (user) {
+  if (user && !authLoading) {
     return <Navigate to="/" replace />;
   }
 
@@ -42,18 +42,13 @@ const AuthPage = () => {
     setLoading(true);
 
     try {
-      await signIn(loginData.email, loginData.password);
-      toast({
-        title: "Welcome back!",
-        description: "You have been successfully logged in.",
-      });
-      navigate('/');
+      const { error } = await signIn(loginData.email, loginData.password);
+      
+      if (!error) {
+        navigate('/');
+      }
     } catch (error: any) {
-      toast({
-        title: "Login Failed",
-        description: error.message || "Invalid email or password",
-        variant: "destructive",
-      });
+      console.error('Login error:', error);
     } finally {
       setLoading(false);
     }
@@ -71,30 +66,51 @@ const AuthPage = () => {
       return;
     }
 
+    if (signupData.password.length < 6) {
+      toast({
+        title: "Error",
+        description: "Password must be at least 6 characters long",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
-      await signUp(
+      const { error } = await signUp(
         signupData.email, 
         signupData.password, 
         signupData.fullName, 
         signupData.phoneNumber, 
         signupData.userType
       );
-      toast({
-        title: "Account created successfully!",
-        description: "Please check your email to verify your account.",
-      });
+      
+      if (!error) {
+        // Clear form on success
+        setSignupData({
+          email: '',
+          password: '',
+          confirmPassword: '',
+          fullName: '',
+          phoneNumber: '',
+          userType: 'buyer',
+        });
+      }
     } catch (error: any) {
-      toast({
-        title: "Signup Failed",
-        description: error.message || "Failed to create account",
-        variant: "destructive",
-      });
+      console.error('Signup error:', error);
     } finally {
       setLoading(false);
     }
   };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
@@ -206,6 +222,7 @@ const AuthPage = () => {
                     value={signupData.password}
                     onChange={(e) => setSignupData({ ...signupData, password: e.target.value })}
                     required
+                    minLength={6}
                   />
                 </div>
 
@@ -217,6 +234,7 @@ const AuthPage = () => {
                     value={signupData.confirmPassword}
                     onChange={(e) => setSignupData({ ...signupData, confirmPassword: e.target.value })}
                     required
+                    minLength={6}
                   />
                 </div>
 
