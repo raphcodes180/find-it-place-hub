@@ -1,4 +1,3 @@
-
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -211,8 +210,26 @@ const StoreDetailPage = () => {
               </Card>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {products.map((product) => (
-                  <ProductCard key={product.id} product={product} />
+                {products.map((product: any) => (
+                  <ProductCard
+                    key={product.id}
+                    id={product.id}
+                    title={product.title}
+                    description={product.description}
+                    price={product.price}
+                    unit={product.unit}
+                    category={product.category}
+                    subcategory={product.subcategory}
+                    images={product.product_images || []}
+                    store={{
+                      name: store?.name || '',
+                      county: store?.counties?.name || ''
+                    }}
+                    location={{
+                      county: product.counties?.name || '',
+                      sub_county: product.sub_counties?.name
+                    }}
+                  />
                 ))}
               </div>
             )}
