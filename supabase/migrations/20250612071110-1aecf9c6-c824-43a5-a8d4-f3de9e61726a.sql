@@ -1,5 +1,5 @@
 
--- Create the user_type enum if it doesn't exist
+-- Create the user_type enum if it doesnt exist
 DO $$ BEGIN
     CREATE TYPE user_type AS ENUM ('buyer', 'seller');
 EXCEPTION
