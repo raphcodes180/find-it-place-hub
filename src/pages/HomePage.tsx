@@ -63,7 +63,7 @@ const HomePage = () => {
     },
   });
 
-  const totalPages = Math.ceil((productsData?.total || 0) / itemsPerPage);
+  const totalPages = Math.ceil((productsData?.length || 0) / itemsPerPage);
 
   const handleCategoryChange = (category: string) => {
     setSelectedCategory(category as ProductCategory | '');
