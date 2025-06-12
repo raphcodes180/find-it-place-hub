@@ -6,25 +6,18 @@ import { supabase } from '@/integrations/supabase/client';
 import { Header } from '@/components/Layout/Header';
 import { Footer } from '@/components/Layout/Footer';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
 import { toast } from '@/hooks/use-toast';
-import { User, Edit, Mail, Phone, MapPin, Upload } from 'lucide-react';
+import { User, Edit, Mail, Phone, MapPin, Upload, Save, X } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
 
 const ProfilePage = () => {
   const { user, loading: authLoading } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
-    full_name: '',
-    user_type: 'buyer' as 'buyer' | 'seller',
-    county_id: '',
-    sub_county_id: '',
-    ward_id: '',
     show_phone_number: false,
     notifications_enabled: true,
   });
@@ -54,29 +47,10 @@ const ProfilePage = () => {
     enabled: !!user?.id,
   });
 
-  // Fetch counties for dropdown
-  const { data: counties = [] } = useQuery({
-    queryKey: ['counties'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('counties')
-        .select('id, name')
-        .order('name');
-      
-      if (error) throw error;
-      return data;
-    },
-  });
-
   // Update form data when profile loads
   useEffect(() => {
     if (profile) {
       setFormData({
-        full_name: profile.full_name || '',
-        user_type: (profile.user_type === 'buyer' || profile.user_type === 'seller') ? profile.user_type : 'buyer',
-        county_id: profile.county_id?.toString() || '',
-        sub_county_id: profile.sub_county_id?.toString() || '',
-        ward_id: profile.ward_id?.toString() || '',
         show_phone_number: profile.show_phone_number || false,
         notifications_enabled: profile.notifications_enabled ?? true,
       });
@@ -124,7 +98,7 @@ const ProfilePage = () => {
     try {
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}-${Math.random()}.${fileExt}`;
-      const filePath = `avatars/${fileName}`;
+      const filePath = `${user.id}/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('avatars')
@@ -217,77 +191,73 @@ const ProfilePage = () => {
           <CardContent>
             {isEditing ? (
               <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="full_name">Full Name</Label>
-                  <Input
-                    id="full_name"
-                    value={formData.full_name}
-                    onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                    required
-                  />
+                {/* Non-editable display fields */}
+                <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
+                  <div>
+                    <Label className="text-sm text-gray-500">Full Name</Label>
+                    <p className="text-lg font-medium">{profile?.full_name || 'Not set'}</p>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Mail className="h-4 w-4 text-gray-500" />
+                    <div>
+                      <Label className="text-sm text-gray-500">Email</Label>
+                      <p className="text-lg">{profile?.email}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Phone className="h-4 w-4 text-gray-500" />
+                    <div>
+                      <Label className="text-sm text-gray-500">Phone Number</Label>
+                      <p className="text-lg">{profile?.phone_number || 'Not set'}</p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label className="text-sm text-gray-500">Account Type</Label>
+                    <p className="text-lg capitalize">{profile?.user_type || 'buyer'}</p>
+                  </div>
+
+                  {profile?.counties && (
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-gray-500" />
+                      <div>
+                        <Label className="text-sm text-gray-500">Location</Label>
+                        <p className="text-lg">{profile.counties.name}</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="user_type">Account Type</Label>
-                  <Select 
-                    value={formData.user_type} 
-                    onValueChange={(value: 'buyer' | 'seller') => 
-                      setFormData({ ...formData, user_type: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="buyer">Buyer</SelectItem>
-                      <SelectItem value="seller">Seller</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                {/* Editable fields */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-3 border rounded-lg">
+                    <Label htmlFor="show_phone">Show phone number publicly</Label>
+                    <Switch
+                      id="show_phone"
+                      checked={formData.show_phone_number}
+                      onCheckedChange={(checked) => 
+                        setFormData({ ...formData, show_phone_number: checked })
+                      }
+                    />
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="county">County</Label>
-                  <Select 
-                    value={formData.county_id} 
-                    onValueChange={(value) => setFormData({ ...formData, county_id: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select county" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {counties.map((county) => (
-                        <SelectItem key={county.id} value={county.id.toString()}>
-                          {county.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="show_phone">Show phone number publicly</Label>
-                  <Switch
-                    id="show_phone"
-                    checked={formData.show_phone_number}
-                    onCheckedChange={(checked) => 
-                      setFormData({ ...formData, show_phone_number: checked })
-                    }
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="notifications">Enable notifications</Label>
-                  <Switch
-                    id="notifications"
-                    checked={formData.notifications_enabled}
-                    onCheckedChange={(checked) => 
-                      setFormData({ ...formData, notifications_enabled: checked })
-                    }
-                  />
+                  <div className="flex items-center justify-between p-3 border rounded-lg">
+                    <Label htmlFor="notifications">Enable notifications</Label>
+                    <Switch
+                      id="notifications"
+                      checked={formData.notifications_enabled}
+                      onCheckedChange={(checked) => 
+                        setFormData({ ...formData, notifications_enabled: checked })
+                      }
+                    />
+                  </div>
                 </div>
 
                 <div className="flex gap-2">
                   <Button type="submit" disabled={updateProfileMutation.isPending}>
+                    <Save className="h-4 w-4 mr-1" />
                     {updateProfileMutation.isPending ? 'Saving...' : 'Save Changes'}
                   </Button>
                   <Button
@@ -295,6 +265,7 @@ const ProfilePage = () => {
                     variant="outline"
                     onClick={() => setIsEditing(false)}
                   >
+                    <X className="h-4 w-4 mr-1" />
                     Cancel
                   </Button>
                 </div>
@@ -310,7 +281,7 @@ const ProfilePage = () => {
                   <div className="flex items-center gap-2">
                     <Mail className="h-4 w-4 text-gray-500" />
                     <div>
-                      <Label className="text-sm text-gray-500">Email (cannot be changed)</Label>
+                      <Label className="text-sm text-gray-500">Email</Label>
                       <p className="text-lg">{profile?.email}</p>
                     </div>
                   </div>
@@ -318,7 +289,7 @@ const ProfilePage = () => {
                   <div className="flex items-center gap-2">
                     <Phone className="h-4 w-4 text-gray-500" />
                     <div>
-                      <Label className="text-sm text-gray-500">Phone (cannot be changed)</Label>
+                      <Label className="text-sm text-gray-500">Phone Number</Label>
                       <p className="text-lg">{profile?.phone_number || 'Not set'}</p>
                     </div>
                   </div>
