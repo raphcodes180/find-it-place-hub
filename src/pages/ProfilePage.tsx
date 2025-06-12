@@ -1,138 +1,159 @@
+
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { Header } from '@/components/Layout/Header';
 import { Footer } from '@/components/Layout/Footer';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
+import { Loader2, User, Settings } from 'lucide-react';
+import { Navigate } from 'react-router-dom';
+
+type UserType = 'buyer' | 'seller';
 
 const ProfilePage = () => {
-  const { user, updateUserType } = useAuth();
-  const [profile, setProfile] = useState<any>(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const { user, signOut } = useAuth();
+  const queryClient = useQueryClient();
+  const [editing, setEditing] = useState(false);
   const [formData, setFormData] = useState({
     full_name: '',
     phone_number: '',
-    user_type: 'buyer' as 'buyer' | 'seller',
+    user_type: 'buyer' as UserType,
+    county_id: '',
+    sub_county_id: '',
+    ward_id: '',
     show_phone_number: false,
     notifications_enabled: true,
   });
 
-  useEffect(() => {
-    fetchProfile();
-  }, [user]);
-
-  const fetchProfile = async () => {
-    if (!user) return;
-
-    setLoading(true);
-    try {
+  // Fetch user profile
+  const { data: profile, isLoading } = useQuery({
+    queryKey: ['profile', user?.id],
+    queryFn: async () => {
+      if (!user) return null;
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select(`
+          *,
+          counties(name),
+          sub_counties(name),
+          wards(name)
+        `)
         .eq('id', user.id)
         .single();
-
+      
       if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
 
-      setProfile(data);
-      setFormData({
-        full_name: data?.full_name || '',
-        phone_number: data?.phone_number || '',
-        user_type: data?.user_type || 'buyer',
-        show_phone_number: data?.show_phone_number || false,
-        notifications_enabled: data?.notifications_enabled || true,
-      });
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load profile",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Fetch counties
+  const { data: counties = [] } = useQuery({
+    queryKey: ['counties'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('counties')
+        .select('*')
+        .order('name');
+      if (error) throw error;
+      return data;
+    },
+  });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value, type } = e.target;
-    const checked = type === 'checkbox' ? (e.target as HTMLInputElement).checked : false;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }));
-  };
-
-  const handleSave = async () => {
-    if (!user) return;
-
-    try {
+  // Update profile mutation
+  const updateProfileMutation = useMutation({
+    mutationFn: async (updateData: any) => {
+      if (!user) throw new Error('No user found');
+      
       const { error } = await supabase
         .from('profiles')
-        .update({
-          full_name: formData.full_name,
-          phone_number: formData.phone_number,
-          user_type: formData.user_type,
-          show_phone_number: formData.show_phone_number,
-          notifications_enabled: formData.notifications_enabled,
-        })
+        .update(updateData)
         .eq('id', user.id);
-
-      if (error) throw error;
-
-      // If user type changed, call the auth context update
-      if (profile?.user_type !== formData.user_type) {
-        await updateUserType(formData.user_type);
-      }
-
-      toast({
-        title: "Profile updated successfully!",
-        description: "Your changes have been saved.",
-      });
       
-      setIsEditing(false);
-      await fetchProfile();
-    } catch (error) {
-      console.error('Error updating profile:', error);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profile', user?.id] });
+      toast({
+        title: "Profile Updated",
+        description: "Your profile has been successfully updated.",
+      });
+      setEditing(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Update Failed",
+        description: error.message || "Failed to update profile",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Set form data when profile loads
+  useEffect(() => {
+    if (profile) {
+      setFormData({
+        full_name: profile.full_name || '',
+        phone_number: profile.phone_number || '',
+        user_type: (profile.user_type === 'admin' ? 'seller' : profile.user_type) as UserType,
+        county_id: profile.county_id?.toString() || '',
+        sub_county_id: profile.sub_county_id?.toString() || '',
+        ward_id: profile.ward_id?.toString() || '',
+        show_phone_number: profile.show_phone_number || false,
+        notifications_enabled: profile.notifications_enabled || true,
+      });
+    }
+  }, [profile]);
+
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    const updateData = {
+      full_name: formData.full_name,
+      phone_number: formData.phone_number,
+      user_type: formData.user_type,
+      county_id: formData.county_id ? parseInt(formData.county_id) : null,
+      sub_county_id: formData.sub_county_id ? parseInt(formData.sub_county_id) : null,
+      ward_id: formData.ward_id ? parseInt(formData.ward_id) : null,
+      show_phone_number: formData.show_phone_number,
+      notifications_enabled: formData.notifications_enabled,
+    };
+
+    updateProfileMutation.mutate(updateData);
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      toast({
+        title: "Signed Out",
+        description: "You have been successfully signed out.",
+      });
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to update profile",
+        description: error.message || "Failed to sign out",
         variant: "destructive",
       });
     }
   };
 
-  if (!user) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col">
         <Header />
-        <main className="flex-1 container mx-auto px-4 py-8">
-          <div className="text-center">
-            <h2 className="text-2xl font-semibold mb-4">Profile</h2>
-            <p>Please sign in to view your profile.</p>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <Header />
-        <main className="flex-1 container mx-auto px-4 py-8">
-          <div className="text-center">
-            <h2 className="text-2xl font-semibold mb-4">Profile</h2>
-            <p>Loading profile...</p>
-          </div>
+        <main className="flex-1 flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin" />
         </main>
         <Footer />
       </div>
@@ -143,102 +164,125 @@ const ProfilePage = () => {
     <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1 container mx-auto px-4 py-8">
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-2xl mx-auto">
           <Card>
-            <CardHeader>
-              <CardTitle className="text-2xl font-semibold">
-                {isEditing ? 'Edit Profile' : 'Profile'}
-              </CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <User className="h-6 w-6" />
+                <CardTitle>Profile Settings</CardTitle>
+              </div>
+              <div className="flex space-x-2">
+                {!editing && (
+                  <Button variant="outline" onClick={() => setEditing(true)}>
+                    <Settings className="h-4 w-4 mr-2" />
+                    Edit
+                  </Button>
+                )}
+                <Button variant="outline" onClick={handleSignOut}>
+                  Sign Out
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
-              {isEditing ? (
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="full_name">Full Name</Label>
-                    <Input
-                      type="text"
-                      id="full_name"
-                      name="full_name"
-                      value={formData.full_name}
-                      onChange={handleChange}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="phone_number">Phone Number</Label>
-                    <Input
-                      type="tel"
-                      id="phone_number"
-                      name="phone_number"
-                      value={formData.phone_number}
-                      onChange={handleChange}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="user_type">Account Type</Label>
-                    <Select value={formData.user_type} onValueChange={(value: 'buyer' | 'seller') => setFormData(prev => ({ ...prev, user_type: value }))}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select account type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="buyer">Buyer</SelectItem>
-                        <SelectItem value="seller">Seller</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="show_phone_number">Show Phone Number</Label>
-                    <Switch
-                      id="show_phone_number"
-                      checked={formData.show_phone_number}
-                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, show_phone_number: checked }))}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="notifications_enabled">Notifications Enabled</Label>
-                    <Switch
-                      id="notifications_enabled"
-                      checked={formData.notifications_enabled}
-                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, notifications_enabled: checked }))}
-                    />
-                  </div>
-                  <div className="flex justify-end">
-                    <Button variant="secondary" onClick={() => setIsEditing(false)}>
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div>
+                  <Label htmlFor="email">Email (Cannot be changed)</Label>
+                  <Input
+                    id="email"
+                    value={profile?.email || ''}
+                    disabled
+                    className="bg-muted"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="full_name">Full Name</Label>
+                  <Input
+                    id="full_name"
+                    value={formData.full_name}
+                    onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                    disabled={!editing}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="phone_number">Phone Number</Label>
+                  <Input
+                    id="phone_number"
+                    type="tel"
+                    value={formData.phone_number}
+                    onChange={(e) => setFormData({ ...formData, phone_number: e.target.value })}
+                    disabled={!editing}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="user_type">Account Type</Label>
+                  <Select
+                    value={formData.user_type}
+                    onValueChange={(value: UserType) => setFormData({ ...formData, user_type: value })}
+                    disabled={!editing}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="buyer">Buyer</SelectItem>
+                      <SelectItem value="seller">Seller</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="county">County</Label>
+                  <Select
+                    value={formData.county_id}
+                    onValueChange={(value) => setFormData({ 
+                      ...formData, 
+                      county_id: value,
+                      sub_county_id: '',
+                      ward_id: ''
+                    })}
+                    disabled={!editing}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select county" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {counties.map((county) => (
+                        <SelectItem key={county.id} value={county.id.toString()}>
+                          {county.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {editing && (
+                  <div className="flex justify-end space-x-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setEditing(false)}
+                    >
                       Cancel
                     </Button>
-                    <Button className="ml-2" onClick={handleSave}>
-                      Save
+                    <Button
+                      type="submit"
+                      disabled={updateProfileMutation.isPending}
+                    >
+                      {updateProfileMutation.isPending ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        'Save Changes'
+                      )}
                     </Button>
                   </div>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div>
-                    <Label>Full Name</Label>
-                    <p className="text-gray-600">{profile?.full_name}</p>
-                  </div>
-                  <div>
-                    <Label>Email</Label>
-                    <p className="text-gray-600">{profile?.email}</p>
-                  </div>
-                  <div>
-                    <Label>Phone Number</Label>
-                    <p className="text-gray-600">{profile?.phone_number || 'Not provided'}</p>
-                  </div>
-                  <div>
-                    <Label>Account Type</Label>
-                    <p className="text-gray-600">{profile?.user_type}</p>
-                  </div>
-                  <div>
-                    <Label>Show Phone Number</Label>
-                    <p className="text-gray-600">{profile?.show_phone_number ? 'Yes' : 'No'}</p>
-                  </div>
-                  <div>
-                    <Label>Notifications Enabled</Label>
-                    <p className="text-gray-600">{profile?.notifications_enabled ? 'Yes' : 'No'}</p>
-                  </div>
-                  <Button onClick={() => setIsEditing(true)}>Edit Profile</Button>
-                </div>
-              )}
+                )}
+              </form>
             </CardContent>
           </Card>
         </div>

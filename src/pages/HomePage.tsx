@@ -10,10 +10,12 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, Loader2 } from 'lucide-react';
 
+type ProductCategory = 'crops' | 'livestock' | 'dairy' | 'poultry' | 'aquaculture' | 'horticulture' | 'cereals' | 'legumes' | 'fruits' | 'vegetables' | 'farm_equipment' | 'seeds' | 'fertilizers' | 'pesticides';
+
 const HomePage = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
-  const [selectedCounty, setSelectedCounty] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<ProductCategory | ''>('');
+  const [selectedCounty, setSelectedCounty] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000]);
   
@@ -45,7 +47,7 @@ const HomePage = () => {
       }
 
       if (selectedCounty) {
-        query = query.eq('stores.county_id', selectedCounty);
+        query = query.eq('county_id', selectedCounty);
       }
 
       const { data, error, count } = await query
@@ -59,6 +61,21 @@ const HomePage = () => {
   });
 
   const totalPages = Math.ceil((productsData?.total || 0) / itemsPerPage);
+
+  const handleCategoryChange = (category: string) => {
+    setSelectedCategory(category as ProductCategory | '');
+    setCurrentPage(1);
+  };
+
+  const handleCountyChange = (county: string) => {
+    setSelectedCounty(county ? parseInt(county) : null);
+    setCurrentPage(1);
+  };
+
+  const handlePriceRangeChange = (range: [number, number]) => {
+    setPriceRange(range);
+    setCurrentPage(1);
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -97,11 +114,11 @@ const HomePage = () => {
               <div className="lg:w-1/4">
                 <ProductFilters
                   selectedCategory={selectedCategory}
-                  onCategoryChange={setSelectedCategory}
-                  selectedCounty={selectedCounty}
-                  onCountyChange={setSelectedCounty}
+                  onCategoryChange={handleCategoryChange}
+                  selectedCounty={selectedCounty ? selectedCounty.toString() : ''}
+                  onCountyChange={handleCountyChange}
                   priceRange={priceRange}
-                  onPriceRangeChange={setPriceRange}
+                  onPriceRangeChange={handlePriceRangeChange}
                 />
               </div>
 
