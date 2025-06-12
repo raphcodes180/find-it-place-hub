@@ -71,8 +71,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           data: {
             full_name: fullName,
             phone_number: phoneNumber,
-            user_type: userType
-            
+            user_type: userType,  
           },
         },
       });
