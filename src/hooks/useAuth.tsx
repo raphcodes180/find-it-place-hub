@@ -50,18 +50,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('Signing up with redirect URL:', redirectUrl);
       console.log(userType)
 
-    //    // Create profile record
-    // if (data.user) {
-    //   const { error: profileError } = await supabase
-    //     .from('profiles')
-    //     .insert({
-    //       id: data.user.id,
-    //       full_name: fullName,
-    //       phone_number: phoneNumber,
-    //       user_type: userType
-    //     });
-    //   if (profileError) throw profileError;
-    // }
+       // Create profile record
+    if (data.user) {
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          id: data.user.id,
+          full_name: fullName,
+          phone_number: phoneNumber,
+          user_type: userType
+        });
+      if (profileError) throw profileError;
+    }
       
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -70,6 +70,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           emailRedirectTo: redirectUrl,
           data: {
             full_name: fullName,
+            phone_number: phoneNumber,
+            user_type: userType
+            
           },
         },
       });
@@ -83,19 +86,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
         return { error };
       }
-
-      // Create profile record
-    if (data.user) {
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          id: data.user.id,
-          full_name: fullName,
-          phone_number: phoneNumber,
-          user_type: userType
-        });
-      if (profileError) throw profileError;
-    }
 
       console.log('Signup successful:', data);
       toast({
