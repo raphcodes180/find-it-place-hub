@@ -43,7 +43,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, fullName: string, phoneNumber: string, userType: 'buyer' | 'seller' | 'admin' ) => {
+  const signUp = async (email: string, password: string, fullName: string, phoneNumber: string, userType: 'buyer' | 'seller' ) => {
     try {
       setLoading(true);
       const redirectUrl = `${window.location.origin}/`;
