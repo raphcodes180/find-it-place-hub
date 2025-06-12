@@ -127,7 +127,7 @@ const HomePage = () => {
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold text-gray-900">
                 Available Products ({productsData?.total || 0})
-                {console.log("products data 1: ", productsData[0])}
+                {console.log("products data 1: ", productsData)}
               </h2>
             </div>
 
