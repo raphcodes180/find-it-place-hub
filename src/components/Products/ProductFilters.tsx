@@ -1,13 +1,10 @@
 
-import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
 
 const categories = [
   { value: 'crops', label: 'Crops' },
@@ -43,8 +40,6 @@ export const ProductFilters = ({
   priceRange,
   onPriceRangeChange,
 }: ProductFiltersProps) => {
-  const [filtersOpen, setFiltersOpen] = useState(false);
-
   // Fetch counties
   const { data: counties } = useQuery({
     queryKey: ['counties'],
@@ -66,89 +61,75 @@ export const ProductFilters = ({
   };
 
   return (
-    <Card className="sticky top-4">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center justify-between">
-          <span>Filters</span>
-          <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
-            <CollapsibleTrigger asChild>
-              <Button variant="ghost" size="sm" className="lg:hidden">
-                {filtersOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-              </Button>
-            </CollapsibleTrigger>
-          </Collapsible>
-        </CardTitle>
-      </CardHeader>
+    <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+      <CardContent className="p-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+          {/* Category Filter */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-white">Category</label>
+            <Select value={selectedCategory} onValueChange={onCategoryChange}>
+              <SelectTrigger className="bg-white text-gray-900">
+                <SelectValue placeholder="All categories" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">All categories</SelectItem>
+                {categories.map((category) => (
+                  <SelectItem key={category.value} value={category.value}>
+                    {category.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-      <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
-        <CollapsibleContent className="lg:block">
-          <CardContent className="space-y-6">
-            {/* Category Filter */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Category</label>
-              <Select value={selectedCategory} onValueChange={onCategoryChange}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All categories" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">All categories</SelectItem>
-                  {categories.map((category) => (
-                    <SelectItem key={category.value} value={category.value}>
-                      {category.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          {/* County Filter */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-white">County</label>
+            <Select value={selectedCounty} onValueChange={onCountyChange}>
+              <SelectTrigger className="bg-white text-gray-900">
+                <SelectValue placeholder="All counties" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">All counties</SelectItem>
+                {counties?.map((county) => (
+                  <SelectItem key={county.id} value={county.id.toString()}>
+                    {county.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Price Range Filter */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-white">
+              Price Range: KES {priceRange[0].toLocaleString()} - {priceRange[1].toLocaleString()}
+            </label>
+            <div className="px-2">
+              <Slider
+                value={priceRange}
+                onValueChange={(value) => onPriceRangeChange(value as [number, number])}
+                max={10000}
+                min={0}
+                step={100}
+                className="w-full"
+              />
             </div>
+          </div>
 
-            {/* County Filter */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">County</label>
-              <Select value={selectedCounty} onValueChange={onCountyChange}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All counties" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">All counties</SelectItem>
-                  {counties?.map((county) => (
-                    <SelectItem key={county.id} value={county.id.toString()}>
-                      {county.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Price Range Filter */}
-            <div className="space-y-3">
-              <label className="text-sm font-medium">Price Range (KES)</label>
-              <div className="px-2">
-                <Slider
-                  value={priceRange}
-                  onValueChange={(value) => onPriceRangeChange(value as [number, number])}
-                  max={10000}
-                  min={0}
-                  step={100}
-                  className="w-full"
-                />
-              </div>
-              <div className="flex justify-between text-sm text-gray-600">
-                <span>KES {priceRange[0].toLocaleString()}</span>
-                <span>KES {priceRange[1].toLocaleString()}</span>
-              </div>
-            </div>
-
-            {/* Clear Filters */}
+          {/* Clear Filters */}
+          <div className="space-y-2">
+            <div className="h-5"></div>
             <Button 
               variant="outline" 
               onClick={clearFilters}
-              className="w-full"
+              className="w-full bg-white/10 border-white/20 text-white hover:bg-white/20"
             >
               Clear Filters
             </Button>
-          </CardContent>
-        </CollapsibleContent>
-      </Collapsible>
+          </div>
+        </div>
+      </CardContent>
     </Card>
   );
 };

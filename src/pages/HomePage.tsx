@@ -29,7 +29,10 @@ const HomePage = () => {
         .from('products')
         .select(`
           *,
-          stores!inner(name, counties!inner(name)),
+          stores!inner(
+            name,
+            profiles!inner(full_name)
+          ),
           product_images(image_url, is_primary),
           counties(name),
           sub_counties(name)
@@ -93,7 +96,7 @@ const HomePage = () => {
             </p>
             
             {/* Search Bar */}
-            <div className="max-w-2xl mx-auto relative">
+            <div className="max-w-2xl mx-auto relative mb-8">
               <Input
                 type="text"
                 placeholder="Search for products..."
@@ -103,103 +106,98 @@ const HomePage = () => {
               />
               <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
             </div>
+
+            {/* Filters - Right below search bar */}
+            <div className="max-w-4xl mx-auto">
+              <ProductFilters
+                selectedCategory={selectedCategory}
+                onCategoryChange={handleCategoryChange}
+                selectedCounty={selectedCounty ? selectedCounty.toString() : ''}
+                onCountyChange={handleCountyChange}
+                priceRange={priceRange}
+                onPriceRangeChange={handlePriceRangeChange}
+              />
+            </div>
           </div>
         </section>
 
         {/* Products Section */}
         <section className="py-12">
           <div className="container mx-auto px-4">
-            <div className="flex flex-col lg:flex-row gap-8">
-              {/* Filters Sidebar */}
-              <div className="lg:w-1/4">
-                <ProductFilters
-                  selectedCategory={selectedCategory}
-                  onCategoryChange={handleCategoryChange}
-                  selectedCounty={selectedCounty ? selectedCounty.toString() : ''}
-                  onCountyChange={handleCountyChange}
-                  priceRange={priceRange}
-                  onPriceRangeChange={handlePriceRangeChange}
-                />
-              </div>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">
+                Available Products ({productsData?.total || 0})
+              </h2>
+            </div>
 
-              {/* Products Grid */}
-              <div className="lg:w-3/4">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-2xl font-bold text-gray-900">
-                    Available Products ({productsData?.total || 0})
-                  </h2>
+            {isLoading ? (
+              <div className="flex justify-center items-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-green-600" />
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {productsData?.products?.map((product: any) => (
+                    <ProductCard
+                      key={product.id}
+                      id={product.id}
+                      title={product.title}
+                      description={product.description}
+                      price={product.price}
+                      unit={product.unit}
+                      category={product.category}
+                      subcategory={product.subcategory}
+                      images={product.product_images || []}
+                      store={{
+                        name: product.stores?.name || '',
+                        county: product.counties?.name || ''
+                      }}
+                      location={{
+                        county: product.counties?.name || '',
+                        sub_county: product.sub_counties?.name
+                      }}
+                    />
+                  ))}
                 </div>
 
-                {isLoading ? (
-                  <div className="flex justify-center items-center py-12">
-                    <Loader2 className="h-8 w-8 animate-spin text-green-600" />
-                  </div>
-                ) : (
-                  <>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {productsData?.products?.map((product: any) => (
-                        <ProductCard
-                          key={product.id}
-                          id={product.id}
-                          title={product.title}
-                          description={product.description}
-                          price={product.price}
-                          unit={product.unit}
-                          category={product.category}
-                          subcategory={product.subcategory}
-                          images={product.product_images || []}
-                          store={{
-                            name: product.stores?.name || '',
-                            county: product.stores?.counties?.name || ''
-                          }}
-                          location={{
-                            county: product.counties?.name || '',
-                            sub_county: product.sub_counties?.name
-                          }}
-                        />
-                      ))}
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="flex justify-center items-center space-x-2 mt-8">
+                    <Button
+                      variant="outline"
+                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                      disabled={currentPage === 1}
+                    >
+                      Previous
+                    </Button>
+                    
+                    <div className="flex space-x-1">
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        const page = i + 1;
+                        return (
+                          <Button
+                            key={page}
+                            variant={currentPage === page ? "default" : "outline"}
+                            onClick={() => setCurrentPage(page)}
+                            className="w-10"
+                          >
+                            {page}
+                          </Button>
+                        );
+                      })}
                     </div>
 
-                    {/* Pagination */}
-                    {totalPages > 1 && (
-                      <div className="flex justify-center items-center space-x-2 mt-8">
-                        <Button
-                          variant="outline"
-                          onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                          disabled={currentPage === 1}
-                        >
-                          Previous
-                        </Button>
-                        
-                        <div className="flex space-x-1">
-                          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                            const page = i + 1;
-                            return (
-                              <Button
-                                key={page}
-                                variant={currentPage === page ? "default" : "outline"}
-                                onClick={() => setCurrentPage(page)}
-                                className="w-10"
-                              >
-                                {page}
-                              </Button>
-                            );
-                          })}
-                        </div>
-
-                        <Button
-                          variant="outline"
-                          onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                          disabled={currentPage === totalPages}
-                        >
-                          Next
-                        </Button>
-                      </div>
-                    )}
-                  </>
+                    <Button
+                      variant="outline"
+                      onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                      disabled={currentPage === totalPages}
+                    >
+                      Next
+                    </Button>
+                  </div>
                 )}
-              </div>
-            </div>
+              </>
+            )}
           </div>
         </section>
       </main>
