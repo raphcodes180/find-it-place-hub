@@ -53,12 +53,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        options: {
-          emailRedirectTo: redirectUrl,
-          data: {
-            full_name: fullName,
-          },
-        },
+        // options: {
+        //   emailRedirectTo: redirectUrl,
+        //   data: {
+        //     full_name: fullName,
+        //   },
+        // },
       });
 
       if (error) {
