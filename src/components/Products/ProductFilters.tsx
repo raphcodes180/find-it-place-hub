@@ -60,6 +60,16 @@ export const ProductFilters = ({
     onPriceRangeChange([0, 10000]);
   };
 
+  // Handle category change to convert "all" back to empty string
+  const handleCategoryChange = (value: string) => {
+    onCategoryChange(value === 'all' ? '' : value);
+  };
+
+  // Handle county change to convert "all" back to empty string
+  const handleCountyChange = (value: string) => {
+    onCountyChange(value === 'all' ? '' : value);
+  };
+
   return (
     <Card className="bg-white/10 backdrop-blur-sm border-white/20">
       <CardContent className="p-6">
@@ -67,12 +77,12 @@ export const ProductFilters = ({
           {/* Category Filter */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-white">Category</label>
-            <Select value={selectedCategory} onValueChange={onCategoryChange}>
+            <Select value={selectedCategory || 'all'} onValueChange={handleCategoryChange}>
               <SelectTrigger className="bg-white text-gray-900">
                 <SelectValue placeholder="All categories" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All categories</SelectItem>
+                <SelectItem value="all">All categories</SelectItem>
                 {categories.map((category) => (
                   <SelectItem key={category.value} value={category.value}>
                     {category.label}
@@ -85,12 +95,12 @@ export const ProductFilters = ({
           {/* County Filter */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-white">County</label>
-            <Select value={selectedCounty} onValueChange={onCountyChange}>
+            <Select value={selectedCounty || 'all'} onValueChange={handleCountyChange}>
               <SelectTrigger className="bg-white text-gray-900">
                 <SelectValue placeholder="All counties" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All counties</SelectItem>
+                <SelectItem value="all">All counties</SelectItem>
                 {counties?.map((county) => (
                   <SelectItem key={county.id} value={county.id.toString()}>
                     {county.name}
