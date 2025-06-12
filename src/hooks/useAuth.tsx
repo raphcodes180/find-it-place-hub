@@ -8,7 +8,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signUp: (email: string, password: string, fullName: string, phoneNumber: string, userType: 'buyer' | 'seller') => Promise<{ error: any }>;
+  signUp: (email: string, password: string, fullName: string, phoneNumber: string, userType: 'buyer' | 'seller' | 'admin' ) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   updateUserType: (userType: 'buyer' | 'seller') => Promise<void>;
@@ -43,7 +43,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, fullName: string, phoneNumber: string, userType: 'buyer' | 'seller' ) => {
+  const signUp = async (email: string, password: string, fullName: string, phoneNumber: string, userType: 'buyer' | 'seller' | 'admin' ) => {
     try {
       setLoading(true);
       const redirectUrl = `${window.location.origin}/`;
@@ -67,7 +67,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.error('Signup error:', error);
         toast({
           title: "Sign up failed",
-          description: error,
+          description: error.message,
           variant: "destructive",
         });
         return { error };
