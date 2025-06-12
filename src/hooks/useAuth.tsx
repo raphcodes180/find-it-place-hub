@@ -8,7 +8,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signUp: (email: string, password: string, full_name: string, phone_number: string, user_type: 'buyer' | 'seller' ) => Promise<{ error: any }>;
+  signUp: (email: string, password: string, fullName: string, phoneNumber: string, userType: 'buyer' | 'seller' ) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   updateUserType: (userType: 'buyer' | 'seller') => Promise<void>;
@@ -43,12 +43,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, full_name: string, phone_number: string, user_type: 'buyer' | 'seller' ) => {
+  const signUp = async (email: string, password: string, fullName: string, phoneNumber: string, userType: 'buyer' | 'seller' | 'admin' ) => {
     try {
       setLoading(true);
       const redirectUrl = `${window.location.origin}/`;
       console.log('Signing up with redirect URL:', redirectUrl);
-      console.log("user type: ", user_type)
+      console.log(userType)
       
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -56,9 +56,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         options: {
           emailRedirectTo: redirectUrl,
           data: {
-            full_name: full_name,
-            phone_number: phone_number,
-            user_type: user_type,
+            full_name: fullName,
           },
         },
       });
@@ -72,6 +70,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
         return { error };
       }
+
+      // Create profile record
+    if (data.user) {
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          id: data.user.id,
+          full_name: fullName,
+          phone_number: phoneNumber,
+          user_type: userType
+        });
+      if (profileError) throw profileError;
+    }
 
       console.log('Signup successful:', data);
       toast({
