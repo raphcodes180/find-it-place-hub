@@ -13,7 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
 import { toast } from '@/hooks/use-toast';
-import { User, Edit, Mail, Phone, MapPin } from 'lucide-react';
+import { User, Edit, Mail, Phone, MapPin, Upload } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
 
 const ProfilePage = () => {
@@ -73,7 +73,7 @@ const ProfilePage = () => {
     if (profile) {
       setFormData({
         full_name: profile.full_name || '',
-        user_type: profile.user_type || 'buyer',
+        user_type: (profile.user_type === 'buyer' || profile.user_type === 'seller') ? profile.user_type : 'buyer',
         county_id: profile.county_id?.toString() || '',
         sub_county_id: profile.sub_county_id?.toString() || '',
         ward_id: profile.ward_id?.toString() || '',
@@ -117,6 +117,46 @@ const ProfilePage = () => {
     updateProfileMutation.mutate(formData);
   };
 
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user?.id) return;
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}-${Math.random()}.${fileExt}`;
+      const filePath = `avatars/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ profile_picture_url: publicUrl })
+        .eq('id', user.id);
+
+      if (updateError) throw updateError;
+
+      queryClient.invalidateQueries({ queryKey: ['profile', user?.id] });
+      toast({
+        title: 'Profile picture updated',
+        description: 'Your profile picture has been updated successfully.',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to upload image',
+        variant: 'destructive',
+      });
+    }
+  };
+
   if (authLoading || profileLoading) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -140,12 +180,24 @@ const ProfilePage = () => {
         <Card>
           <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
-              <Avatar className="h-24 w-24">
-                <AvatarImage src={profile?.profile_picture_url} />
-                <AvatarFallback>
-                  <User className="h-12 w-12" />
-                </AvatarFallback>
-              </Avatar>
+              <div className="relative">
+                <Avatar className="h-24 w-24">
+                  <AvatarImage src={profile?.profile_picture_url} />
+                  <AvatarFallback>
+                    <User className="h-12 w-12" />
+                  </AvatarFallback>
+                </Avatar>
+                <label htmlFor="avatar-upload" className="absolute bottom-0 right-0 bg-green-600 text-white p-2 rounded-full cursor-pointer hover:bg-green-700">
+                  <Upload className="h-3 w-3" />
+                  <input
+                    id="avatar-upload"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                  />
+                </label>
+              </div>
             </div>
             <CardTitle className="flex items-center justify-center gap-2">
               Profile
