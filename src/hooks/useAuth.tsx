@@ -7,8 +7,9 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, fullName: string) => Promise<void>;
+  signUp: (email: string, password: string, fullName: string, phoneNumber?: string, userType?: 'buyer' | 'seller') => Promise<void>;
   signOut: () => Promise<void>;
+  updateUserType: (newUserType: 'buyer' | 'seller') => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -51,13 +52,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (error) throw error;
   };
 
-  const signUp = async (email: string, password: string, fullName: string) => {
+  const signUp = async (email: string, password: string, fullName: string, phoneNumber?: string, userType: 'buyer' | 'seller' = 'buyer') => {
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
           full_name: fullName,
+          phone_number: phoneNumber,
+          user_type: userType,
         },
       },
     });
@@ -69,12 +72,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (error) throw error;
   };
 
+  const updateUserType = async (newUserType: 'buyer' | 'seller') => {
+    if (!user) throw new Error('No user logged in');
+    
+    const { error } = await supabase
+      .from('profiles')
+      .update({ user_type: newUserType })
+      .eq('id', user.id);
+    
+    if (error) throw error;
+  };
+
   const value = {
     user,
     loading,
     signIn,
     signUp,
     signOut,
+    updateUserType,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

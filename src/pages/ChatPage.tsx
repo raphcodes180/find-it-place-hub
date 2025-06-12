@@ -105,44 +105,106 @@ const ChatPage = () => {
       setMessages(data || []);
 
       // Mark messages as read
-      await supabase
+      const { error: updateError } = await supabase
         .from('messages')
         .update({ is_read: true })
         .eq('chat_id', chatId)
         .neq('sender_id', user?.id);
+
+      if (updateError) {
+        console.error('Error marking messages as read:', updateError);
+      }
     } catch (error) {
       console.error('Error fetching messages:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load messages",
+        variant: "destructive",
+      });
     }
   };
 
   const sendMessage = async () => {
-    if (!newMessage.trim() || !selectedChat) return;
+    if (!newMessage.trim() || !selectedChat || !user) return;
 
     try {
       const { error } = await supabase
         .from('messages')
         .insert({
           chat_id: selectedChat.id,
-          sender_id: user?.id,
+          sender_id: user.id,
           content: newMessage.trim(),
         });
 
       if (error) throw error;
 
       // Update chat's last_message_at
-      await supabase
+      const { error: chatUpdateError } = await supabase
         .from('chats')
         .update({ last_message_at: new Date().toISOString() })
         .eq('id', selectedChat.id);
 
+      if (chatUpdateError) {
+        console.error('Error updating chat timestamp:', chatUpdateError);
+      }
+
       setNewMessage('');
-      fetchMessages(selectedChat.id);
-      fetchChats();
+      await fetchMessages(selectedChat.id);
+      await fetchChats();
     } catch (error) {
       console.error('Error sending message:', error);
       toast({
         title: "Error",
         description: "Failed to send message",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const createNewChat = async (productId: string, sellerId: string) => {
+    if (!user) return;
+
+    try {
+      const { data: existingChat, error: fetchError } = await supabase
+        .from('chats')
+        .select('id')
+        .eq('buyer_id', user.id)
+        .eq('seller_id', sellerId)
+        .eq('product_id', productId)
+        .single();
+
+      if (fetchError && fetchError.code !== 'PGRST116') {
+        throw fetchError;
+      }
+
+      if (existingChat) {
+        // Chat already exists, select it
+        const chatData = chats.find(chat => chat.id === existingChat.id);
+        if (chatData) {
+          setSelectedChat(chatData);
+        }
+        return;
+      }
+
+      // Create new chat
+      const { data: newChat, error: createError } = await supabase
+        .from('chats')
+        .insert({
+          buyer_id: user.id,
+          seller_id: sellerId,
+          product_id: productId,
+        })
+        .select()
+        .single();
+
+      if (createError) throw createError;
+
+      await fetchChats();
+    } catch (error) {
+      console.error('Error creating chat:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create conversation",
         variant: "destructive",
       });
     }

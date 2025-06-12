@@ -1,152 +1,110 @@
-
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { Header } from '@/components/Layout/Header';
 import { Footer } from '@/components/Layout/Footer';
-import { useAuth } from '@/hooks/useAuth';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { User, Phone, Mail, MapPin, Settings, AlertCircle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 const ProfilePage = () => {
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
-  
+  const { user, updateUserType } = useAuth();
+  const [profile, setProfile] = useState<any>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
     full_name: '',
     phone_number: '',
-    county_id: '',
-    sub_county_id: '',
+    user_type: 'buyer' as 'buyer' | 'seller',
     show_phone_number: false,
     notifications_enabled: true,
-    user_type: 'buyer'
   });
 
-  // Fetch user profile
-  const { data: profile, isLoading: profileLoading } = useQuery({
-    queryKey: ['profile', user?.id],
-    queryFn: async () => {
-      if (!user) return null;
-      
+  useEffect(() => {
+    fetchProfile();
+  }, [user]);
+
+  const fetchProfile = async () => {
+    if (!user) return;
+
+    setLoading(true);
+    try {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
         .single();
-      
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user
-  });
 
-  // Fetch counties
-  const { data: counties = [] } = useQuery({
-    queryKey: ['counties'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('counties')
-        .select('id, name')
-        .order('name');
-      
       if (error) throw error;
-      return data;
+
+      setProfile(data);
+      setFormData({
+        full_name: data?.full_name || '',
+        phone_number: data?.phone_number || '',
+        user_type: data?.user_type || 'buyer',
+        show_phone_number: data?.show_phone_number || false,
+        notifications_enabled: data?.notifications_enabled || true,
+      });
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load profile",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
-  });
+  };
 
-  // Fetch sub-counties based on selected county
-  const { data: subCounties = [] } = useQuery({
-    queryKey: ['sub-counties', formData.county_id],
-    queryFn: async () => {
-      if (!formData.county_id) return [];
-      
-      const { data, error } = await supabase
-        .from('sub_counties')
-        .select('id, name')
-        .eq('county_id', parseInt(formData.county_id))
-        .order('name');
-      
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!formData.county_id
-  });
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }));
+  };
 
-  // Update profile mutation
-  const updateProfileMutation = useMutation({
-    mutationFn: async (updatedData: any) => {
-      if (!user) throw new Error('User not authenticated');
-      
+  const handleSave = async () => {
+    if (!user) return;
+
+    try {
       const { error } = await supabase
         .from('profiles')
-        .update(updatedData)
+        .update({
+          full_name: formData.full_name,
+          phone_number: formData.phone_number,
+          user_type: formData.user_type,
+          show_phone_number: formData.show_phone_number,
+          notifications_enabled: formData.notifications_enabled,
+        })
         .eq('id', user.id);
 
       if (error) throw error;
-    },
-    onSuccess: () => {
+
+      // If user type changed, call the auth context update
+      if (profile?.user_type !== formData.user_type) {
+        await updateUserType(formData.user_type);
+      }
+
       toast({
-        title: "Profile updated successfully",
+        title: "Profile updated successfully!",
+        description: "Your changes have been saved.",
       });
-      queryClient.invalidateQueries({ queryKey: ['profile', user?.id] });
-    },
-    onError: (error) => {
+      
+      setIsEditing(false);
+      await fetchProfile();
+    } catch (error) {
       console.error('Error updating profile:', error);
       toast({
         title: "Error",
-        description: "Failed to update profile. Please try again.",
+        description: "Failed to update profile",
         variant: "destructive",
       });
-    }
-  });
-
-  // Initialize form data when profile loads
-  useEffect(() => {
-    if (profile) {
-      setFormData({
-        full_name: profile.full_name || '',
-        phone_number: profile.phone_number || '',
-        county_id: profile.county_id?.toString() || '',
-        sub_county_id: profile.sub_county_id?.toString() || '',
-        show_phone_number: profile.show_phone_number || false,
-        notifications_enabled: profile.notifications_enabled !== false,
-        user_type: profile.user_type || 'buyer'
-      });
-    }
-  }, [profile]);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    const updateData = {
-      ...formData,
-      county_id: formData.county_id ? parseInt(formData.county_id) : null,
-      sub_county_id: formData.sub_county_id ? parseInt(formData.sub_county_id) : null,
-    };
-
-    updateProfileMutation.mutate(updateData);
-  };
-
-  const handleInputChange = (field: string, value: any) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-    
-    // Reset sub-county when county changes
-    if (field === 'county_id') {
-      setFormData(prev => ({
-        ...prev,
-        sub_county_id: ''
-      }));
     }
   };
 
@@ -155,12 +113,25 @@ const ProfilePage = () => {
       <div className="min-h-screen flex flex-col">
         <Header />
         <main className="flex-1 container mx-auto px-4 py-8">
-          <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Please sign in to view your profile.
-            </AlertDescription>
-          </Alert>
+          <div className="text-center">
+            <h2 className="text-2xl font-semibold mb-4">Profile</h2>
+            <p>Please sign in to view your profile.</p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-1 container mx-auto px-4 py-8">
+          <div className="text-center">
+            <h2 className="text-2xl font-semibold mb-4">Profile</h2>
+            <p>Loading profile...</p>
+          </div>
         </main>
         <Footer />
       </div>
@@ -171,162 +142,101 @@ const ProfilePage = () => {
     <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1 container mx-auto px-4 py-8">
-        <div className="max-w-2xl mx-auto">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Profile Settings</h1>
-            <p className="text-gray-600">
-              Manage your account information and preferences
-            </p>
-          </div>
-
+        <div className="max-w-3xl mx-auto">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center">
-                <User className="h-5 w-5 mr-2" />
-                Personal Information
+              <CardTitle className="text-2xl font-semibold">
+                {isEditing ? 'Edit Profile' : 'Profile'}
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {profileLoading ? (
+              {isEditing ? (
                 <div className="space-y-4">
-                  {Array.from({ length: 6 }).map((_, i) => (
-                    <div key={i} className="space-y-2">
-                      <Skeleton className="h-4 w-20" />
-                      <Skeleton className="h-10 w-full" />
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="full_name">Full Name</Label>
-                      <Input
-                        id="full_name"
-                        value={formData.full_name}
-                        onChange={(e) => handleInputChange('full_name', e.target.value)}
-                        placeholder="Enter your full name"
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="email">Email</Label>
-                      <Input
-                        id="email"
-                        value={user.email || ''}
-                        disabled
-                        className="bg-gray-50"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        Email cannot be changed
-                      </p>
-                    </div>
+                  <div>
+                    <Label htmlFor="full_name">Full Name</Label>
+                    <Input
+                      type="text"
+                      id="full_name"
+                      name="full_name"
+                      value={formData.full_name}
+                      onChange={handleChange}
+                    />
                   </div>
-
                   <div>
                     <Label htmlFor="phone_number">Phone Number</Label>
                     <Input
+                      type="tel"
                       id="phone_number"
+                      name="phone_number"
                       value={formData.phone_number}
-                      onChange={(e) => handleInputChange('phone_number', e.target.value)}
-                      placeholder="Enter your phone number"
+                      onChange={handleChange}
                     />
                   </div>
-
                   <div>
                     <Label htmlFor="user_type">Account Type</Label>
-                    <Select 
-                      value={formData.user_type} 
-                      onValueChange={(value) => handleInputChange('user_type', value)}
-                    >
+                    <Select value={formData.user_type} onValueChange={(value: 'buyer' | 'seller') => setFormData(prev => ({ ...prev, user_type: value }))}>
                       <SelectTrigger>
-                        <SelectValue />
+                        <SelectValue placeholder="Select account type" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="buyer">Buyer</SelectItem>
                         <SelectItem value="seller">Seller</SelectItem>
-                        <SelectItem value="both">Both Buyer & Seller</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="county">County</Label>
-                      <Select 
-                        value={formData.county_id} 
-                        onValueChange={(value) => handleInputChange('county_id', value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select county" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {counties.map((county) => (
-                            <SelectItem key={county.id} value={county.id.toString()}>
-                              {county.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="sub_county">Sub-County</Label>
-                      <Select 
-                        value={formData.sub_county_id} 
-                        onValueChange={(value) => handleInputChange('sub_county_id', value)}
-                        disabled={!formData.county_id}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select sub-county" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {subCounties.map((subCounty) => (
-                            <SelectItem key={subCounty.id} value={subCounty.id.toString()}>
-                              {subCounty.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="show_phone_number">Show Phone Number</Label>
+                    <Switch
+                      id="show_phone_number"
+                      checked={formData.show_phone_number}
+                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, show_phone_number: checked }))}
+                    />
                   </div>
-
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label>Show Phone Number</Label>
-                        <p className="text-sm text-gray-500">
-                          Allow other users to see your phone number
-                        </p>
-                      </div>
-                      <Switch
-                        checked={formData.show_phone_number}
-                        onCheckedChange={(checked) => handleInputChange('show_phone_number', checked)}
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label>Email Notifications</Label>
-                        <p className="text-sm text-gray-500">
-                          Receive notifications about messages and updates
-                        </p>
-                      </div>
-                      <Switch
-                        checked={formData.notifications_enabled}
-                        onCheckedChange={(checked) => handleInputChange('notifications_enabled', checked)}
-                      />
-                    </div>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="notifications_enabled">Notifications Enabled</Label>
+                    <Switch
+                      id="notifications_enabled"
+                      checked={formData.notifications_enabled}
+                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, notifications_enabled: checked }))}
+                    />
                   </div>
-
-                  <Button 
-                    type="submit" 
-                    className="w-full bg-green-600 hover:bg-green-700"
-                    disabled={updateProfileMutation.isPending}
-                  >
-                    {updateProfileMutation.isPending ? 'Updating...' : 'Update Profile'}
-                  </Button>
-                </form>
+                  <div className="flex justify-end">
+                    <Button variant="secondary" onClick={() => setIsEditing(false)}>
+                      Cancel
+                    </Button>
+                    <Button className="ml-2" onClick={handleSave}>
+                      Save
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div>
+                    <Label>Full Name</Label>
+                    <p className="text-gray-600">{profile?.full_name}</p>
+                  </div>
+                  <div>
+                    <Label>Email</Label>
+                    <p className="text-gray-600">{profile?.email}</p>
+                  </div>
+                  <div>
+                    <Label>Phone Number</Label>
+                    <p className="text-gray-600">{profile?.phone_number || 'Not provided'}</p>
+                  </div>
+                  <div>
+                    <Label>Account Type</Label>
+                    <p className="text-gray-600">{profile?.user_type}</p>
+                  </div>
+                  <div>
+                    <Label>Show Phone Number</Label>
+                    <p className="text-gray-600">{profile?.show_phone_number ? 'Yes' : 'No'}</p>
+                  </div>
+                  <div>
+                    <Label>Notifications Enabled</Label>
+                    <p className="text-gray-600">{profile?.notifications_enabled ? 'Yes' : 'No'}</p>
+                  </div>
+                  <Button onClick={() => setIsEditing(true)}>Edit Profile</Button>
+                </div>
               )}
             </CardContent>
           </Card>
