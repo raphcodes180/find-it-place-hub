@@ -468,7 +468,7 @@ export type Database = {
         | "seeds"
         | "fertilizers"
         | "pesticides"
-      user_type: "buyer" | "seller" | "admin"
+      user_type: "buyer" | "seller"
     }
     CompositeTypes: {
       [_ in never]: never
